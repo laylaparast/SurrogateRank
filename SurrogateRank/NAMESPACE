@@ -1,0 +1,2 @@
+importFrom(stats, wilcox.test, qnorm, pnorm)
+export("delta.calculate", "est.power", "test.surrogate")
