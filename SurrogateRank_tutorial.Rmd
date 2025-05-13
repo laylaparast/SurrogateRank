@@ -1,0 +1,59 @@
+---
+title: "Tutorial for main functions in SurrogateRank package"
+output:
+  html_document:
+---
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(fig.width=7, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
+```
+
+# Main Functions
+
+We will go through an example using the main functions in the **SurrogateRank** package. First, install the package from CRAN and load it. 
+
+```{r results = "hide", message=FALSE}
+#install.packages("SurrogateRank")
+library(SurrogateRank)
+```
+
+This package uses a rank-based nonparametric approach to evaluate a surrogate marker in a small sample size setting. Details are described in Parast L, Cai T, & Tian L (2024). A rank-based approach to evaluate a surrogate marker in a small sample setting. Biometrics, 80(1), ujad035. If you are viewing the html version of this tutorial, you can find the R markdown file here: <https://github.com/laylaparast/SurrogateRank>. It is the file called SurrogateRank_tutorial.Rmd. 
+
+Let's first take a look at the example dataset included in the package, **example.data**. The dataset has 25 observations from a treatment group (group 1) and 25 observations from a control group (group 0), and contains
+**y1**, the primary outcome in the treatment group, **y0**, the primary outcome in the control group, **s1**, the surrogate marker in the treatment group, and **s0**, the surrogate marker in the control group. 
+
+```{r}
+data(example.data)
+names(example.data)
+```
+Now, we calculate the metric $\delta$ which measures the strength of the surrogate using the function **delta.calculate**. This function requires the primary outcome and surrogate marker in each group, as shown below. The function returns the U-statistic for the treatment effect on the primary outcome, **u.y**, the U-statistic for the treatment effect on the surrogate marker, **u.s**, the difference between these, **delta.estimate**, and the standard error of each estimate, **sd.u.y, sd.u.s, sd.delta**. Lower values of **delta.estimate** indicate a stronger surrogate marker in the sense that the treatment effect on the surrogate is close to the treatment effect on the primary outcome.
+ 
+
+```{r}
+delta.calculate(yone = example.data$y1, yzero = example.data$y0, sone = example.data$s1, szero = example.data$s0)
+```
+
+Next, we formally test this **delta** using **test.surrogate**. The required arguments for this function are the same as **delta.calculate** In addition to the same returned quantities as  **delta.calculate**, this function also returns the 1-sided confidence interval for **delta**, the epsilon that is used for the surrogacy test, and an indication of whether the provided surrogate is a valid surrogate based on this testing approach. For example, with this dataset, **is.surrogate** is **TRUE** meaning we can conclude this surrogate is valid. 
+
+```{r}
+test.surrogate(yone = example.data$y1, yzero = example.data$y0, sone = example.data$s1, szero = example.data$s0)
+
+```
+
+Optional arguments that **test.surrogate** takes are 1) **epsilon** which is the threshold to use for testing delta where the default calculates epsilon as a function of desired power for testing for a treatment effect using the surrogate, 2) **power.want.s** which is the desired power in (1), used to calculate **epsilon** if it is not provided; the default is 0.7, 3) **u.y.hyp** which is the hypothesized value of u.y used in the calculation of epsilon; the default is to use the estimated value **u.y**. For example, in the code below I specify the epsilon, making it more strict than what is used by default above.
+
+```{r}
+test.surrogate(yone = example.data$y1, yzero = example.data$y0, sone = example.data$s1, szero = example.data$s0, epsilon = 0.1)
+
+```
+
+Next, the function **est.power** calculates the estimated power to detect a valid surrogate given a total sample size and specified alternative. This function would generally be used in a design stage before data are collected. The arguments are: 1) **n.total**, the total sample size in the study, 2) **rho**, the rank correlation between Y and S in group 0, default is 0.8, 3) **u.y.alt**, the specified alternative for **u.y**, 4) **delta.alt**, the specified alternative for **delta**, 5) **power.want.s**, the desired power for **u.s**, default is 0.7. The function returns the estimated power to detect a valid surrogate, given these specifications. For example, let's say we are planning a study with a sample size of 50 and based on prior data or domain knowledge we specify the rank correlation between Y and S in group 0 to be 0.7, the alternative for **u.y** to be 0.9, and the specified alternative for **delta** to be 0.05, and our desired power for **u.s** is 0.6. Then, our estimated power is 0.84. 
+
+```{r}
+est.power(n.total = 50, rho = 0.7, u.y.alt=0.9, delta.alt = 0.05, power.want.s=0.6)
+
+```
+
+That's all for now!
+
+---------
