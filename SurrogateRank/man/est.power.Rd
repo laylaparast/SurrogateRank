@@ -20,7 +20,7 @@ est.power(n.total, rho = 0.8, u.y.alt, delta.alt, power.want.s = 0.7)
 	specified alternative for u.y
 }
   \item{delta.alt}{
-	specified alternative for u.s
+	specified alternative for delta
 }
   \item{power.want.s}{
 	desired power for u.s, default is 0.7

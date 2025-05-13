@@ -11,7 +11,7 @@ delta.calculate(full.data = NULL, yone = NULL, yzero = NULL, sone = NULL, szero 
 }
 \arguments{
   \item{full.data}{
-	either full.data or {yone, yzero, sone, szero} must be supplied; if full data is supplied it must be in the following format: one observation per row, Y is in the first column, S is in the second column, treatment group (0 or 1) is in the third column.
+	either full.data or yone, yzero, sone, szero must be supplied; if full data is supplied it must be in the following format: one observation per row, Y is in the first column, S is in the second column, treatment group (0 or 1) is in the third column.
 }
   \item{yone}{
 	primary outcome, Y, in group 1
