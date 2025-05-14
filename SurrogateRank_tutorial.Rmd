@@ -26,7 +26,7 @@ Let's first take a look at the example dataset included in the package, **exampl
 data(example.data)
 names(example.data)
 ```
-Now, we calculate the metric $\delta$ which measures the strength of the surrogate using the function **delta.calculate**. This function requires the primary outcome and surrogate marker in each group, as shown below. The function returns the U-statistic for the treatment effect on the primary outcome, **u.y**, the U-statistic for the treatment effect on the surrogate marker, **u.s**, the difference between these, **delta.estimate**, and the standard error of each estimate, **sd.u.y, sd.u.s, sd.delta**. Lower values of **delta.estimate** indicate a stronger surrogate marker in the sense that the treatment effect on the surrogate is close to the treatment effect on the primary outcome.
+Now, we calculate the metric $delta$ which measures the strength of the surrogate using the function **delta.calculate**. This function requires the primary outcome and surrogate marker in each group, as shown below. The function returns the U-statistic for the treatment effect on the primary outcome, **u.y**, the U-statistic for the treatment effect on the surrogate marker, **u.s**, the difference between these, **delta.estimate**, and the standard error of each estimate, **sd.u.y, sd.u.s, sd.delta**. Lower values of **delta.estimate** indicate a stronger surrogate marker in the sense that the treatment effect on the surrogate is close to the treatment effect on the primary outcome.
  
 
 ```{r}
