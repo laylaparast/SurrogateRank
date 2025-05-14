@@ -54,6 +54,9 @@
 #'                            in for the evaluation. Typically this is taken directly from the
 #'                            screening stage as the output from the \code{rise.screen()} function.
 #'                            Must be given if \code{evaluate.weights} is \code{TRUE}.
+#'                            
+#' @param markers              a vector of marker names (column names of szero and sone) to evaluate.
+#'                             If not given, will default to evaluating all markers in the dataframes. 
 #'
 #' @return a list with
 #' \itemize{
@@ -93,18 +96,30 @@ rise.evaluate <- function(yone,
                           return.all.evaluate = TRUE,
                           return.plot.evaluate = TRUE,
                           evaluate.weights = TRUE,
-                          screening.weights = NULL) {
+                          screening.weights = NULL,
+                          markers = NULL) {
   # Data formatting
-  ## Convert dataframes to numeric matrices
-  if (is.data.frame(sone) | is.data.frame(szero)) {
-    sone <- as.matrix(sone)
-    szero <- as.matrix(szero)
-  }
 
   # If no column names on surrogate candidates, set them as the column indices
   if (is.null(colnames(sone))) {
     colnames(sone) <- paste0("marker", 1:ncol(sone))
     colnames(szero) <- paste0("marker", 1:ncol(szero))
+  }
+  
+  if (!is.null(markers)){
+    sone = sone %>% 
+      as.data.frame() %>% 
+      dplyr::select(any_of(markers))
+    
+    szero = szero %>% 
+      as.data.frame() %>% 
+      dplyr::select(any_of(markers))
+  }
+  
+  ## Convert dataframes to numeric matrices
+  if (is.data.frame(sone) | is.data.frame(szero)) {
+    sone <- as.matrix(sone)
+    szero <- as.matrix(szero)
   }
 
   # Validity checks
@@ -254,10 +269,7 @@ rise.evaluate <- function(yone,
   }
 
   return(list(
-    individual.metrics = list(
-      sone.standardised = sone.standardised,
-      szero.standardised = szero.standardised
-    ),
+    individual.metrics = individual.metrics,
     gamma.s = list(
       gamma.s.one = gamma.s.one,
       gamma.s.zero = gamma.s.zero
