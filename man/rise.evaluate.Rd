@@ -109,11 +109,11 @@ surrogate and the primary response.
 \examples{
 # Load high-dimensional example data
 data("example.data.highdim")
-yone = example.data.highdim$y1
-yzero = example.data.highdim$y0
-sone = example.data.highdim$s1
-szero = example.data.highdim$s0
-rise.evaluate.result = rise.evaluate(yone, yzero, sone, szero, power.want.s = 0.8)
+yone <- example.data.highdim$y1
+yzero <- example.data.highdim$y0
+sone <- example.data.highdim$s1
+szero <- example.data.highdim$s0
+rise.evaluate.result <- rise.evaluate(yone, yzero, sone, szero, power.want.s = 0.8)
 }
 \author{
 Arthur Hughes

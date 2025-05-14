@@ -1,9 +1,9 @@
 #' High‑dimensional surrogate candidate example dataset
 #'
-#' A simulated high‑dimensional dataset for demonstrating the RISE methodology 
-#' implemented in \pkg{SurrogateRank}. The data contains primary response and 
-#' 1000 surrogate candidates from 25 treated individuals and 25 untreated individuals, 
-#' where 10% of the surrogate candidates are "valid". 
+#' A simulated high‑dimensional dataset for demonstrating the RISE methodology
+#' implemented in \pkg{SurrogateRank}. The data contains primary response and
+#' 1000 surrogate candidates from 25 treated individuals and 25 untreated individuals,
+#' where 10% of the surrogate candidates are "valid".
 #'
 #' @format A list containing :
 #' \describe{

@@ -127,11 +127,11 @@ To avoid overfitting, the two stages are performed on separate data.
 \examples{
 # Load high-dimensional example data
 data("example.data.highdim")
-yone = example.data.highdim$y1
-yzero = example.data.highdim$y0
-sone = example.data.highdim$s1
-szero = example.data.highdim$s0
-rise.result = test.surrogate.rise(yone, yzero, sone, szero, power.want.s = 0.8)
+yone <- example.data.highdim$y1
+yzero <- example.data.highdim$y0
+sone <- example.data.highdim$s1
+szero <- example.data.highdim$s0
+rise.result <- test.surrogate.rise(yone, yzero, sone, szero, power.want.s = 0.8)
 }
 \author{
 Arthur Hughes

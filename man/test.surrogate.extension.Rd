@@ -83,12 +83,13 @@ test is desired.
 \examples{
 # Load data
 data("example.data")
-yone = example.data$y1
-yzero = example.data$y0
-sone = example.data$s1
-szero = example.data$s0
-test.surrogate.extension.result = test.surrogate.extension(
-  yone, yzero, sone, szero, power.want.s = 0.8, paired = TRUE, alternative = "two.sided"
+yone <- example.data$y1
+yzero <- example.data$y0
+sone <- example.data$s1
+szero <- example.data$s0
+test.surrogate.extension.result <- test.surrogate.extension(
+  yone, yzero, sone, szero,
+  power.want.s = 0.8, paired = TRUE, alternative = "two.sided"
 )
 }
 \author{
