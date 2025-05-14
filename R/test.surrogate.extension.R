@@ -1,35 +1,44 @@
-#' Function to test for trial-level surrogacy of a single marker extended to the paired, two sided test setting
+#' Function to test for trial-level surrogacy of a single marker extended to the paired, 
+#' two sided test setting
 #' 
 #' @description
-#' This function tests for surrogacy of a univariate marker with respect to a continuous primary response.
-#' This extends the \code{test.surrogate()} function from the \code{SurrogateRank} package to the case where
-#' samples may be paired instead of independent, and where a two sided test is desired.
+#' This function tests for surrogacy of a univariate marker with respect to a continuous primary 
+#' response. This extends the \code{test.surrogate()} function from the \code{SurrogateRank} 
+#' package to the case where samples may be paired instead of independent, and where a two sided 
+#' test is desired.
 #' 
 #' @param yone               numeric vector of primary response values in the treated group.
 #' @param yzero              numeric vector of primary response values in the untreated group.
 #' @param sone               matrix or dataframe of surrogate candidates in the treated group 
-#'                           with dimension \code{n1 x p} where n1 is the number of treated samples and p the number of candidates.
-#'                           Sample ordering must match exactly yone. 
+#'                           with dimension \code{n1 x p} where n1 is the number of treated samples 
+#'                           and p the number of candidates. Sample ordering must match exactly 
+#'                           \code{yone}. 
 #' @param szero              matrix or dataframe of surrogate candidates in the untreated group 
-#'                           with dimension \code{n0 x p} where n0 is the number of untreated samples and p the number of candidates.
-#'                           Sample ordering must match exactly yzero.
-#' @param alpha              significance level for determining surrogate candidates. Default is \code{0.05}.
-#' @param power.want.s       numeric in (0,1) - power desired for a test of treatment effect based on the surrogate candidate. 
-#'                           Either this or \code{epsilon} argument must be specified.
-#' @param epsilon            numeric in (0,1) - non-inferiority margin for determining surrogate validity.
-#'                           Either this or \code{power.want.s} argument must be specified.
-#' @param u.y.hyp            hypothesised value of the treatment effect on the primary response on the probability
-#'                           scale. If not given, it will be estimated based on the observations.
-#' @param alternative        character giving the alternative hypothesis type. One of \code{c("less","two.sided")}, where "less" 
-#'                           corresponds to a non-inferiority test and "two.sided" corresponds to a two one-sided test procedure. Default is 
-#'                           "less".
-#' @param paired             logical flag giving if the data is independent or paired. 
-#'                           If \code{FALSE} (default), samples are assumed independent. 
-#'                           If \code{TRUE}, samples are assumed to be from a paired design. The pairs are specified by matching the rows of 
-#'                           \code{yone} and \code{sone} to the rows of \code{yzero} and \code{szero}. 
-#' 
+#'                           with dimension \code{n0 x p} where n0 is the number of untreated 
+#'                           samples and p the number of candidates. Sample ordering must match 
+#'                           exactly \code{yzero}.
+#' @param alpha              significance level for determining surrogate candidates. Default is 
+#'                           \code{0.05}.
+#' @param power.want.s       numeric in (0,1) - power desired for a test of treatment effect based 
+#'                           on the surrogate candidate. Either this or \code{epsilon} argument 
+#'                           must be specified.
+#' @param epsilon            numeric in (0,1) - non-inferiority margin for determining surrogate 
+#'                           validity. Either this or \code{power.want.s} argument must be 
+#'                           specified.
+#' @param u.y.hyp            hypothesised value of the treatment effect on the primary response on 
+#'                           the probability scale. If not given, it will be estimated based on the 
+#'                           observations.
+#' @param alternative        character giving the alternative hypothesis type. One of 
+#'                           \code{c("less","two.sided")}, where "less" corresponds to a 
+#'                           non-inferiority test and "two.sided" corresponds to a two one-sided 
+#'                           test procedure. Default is "less".
+#' @param paired             logical flag giving if the data is independent or paired. If 
+#'                           \code{FALSE} (default), samples are assumed independent. If 
+#'                           \code{TRUE}, samples are assumed to be from a paired design. The 
+#'                           pairs are specified by matching the rows of \code{yone} and 
+#'                           \code{sone} to the rows of \code{yzero} and \code{szero}.
 #'
-#'@return A list containing:
+#' @return A list containing:
 #' \itemize{
 #'   \item{\code{u.y}}{Estimated rank-based treatment effect on the outcome.}
 #'   \item{\code{u.s}}{Estimated rank-based treatment effect on the surrogate.}
@@ -44,8 +53,9 @@
 #' }
 #' 
 #' @import dplyr 
+#' @export
 #' @author Arthur Hughes, Layla Parast
-#' 
+#'
 #' @examples
 #' # Load data
 #' data("example.data")
@@ -53,9 +63,9 @@
 #' yzero = example.data$y0
 #' sone = example.data$s1
 #' szero = example.data$s0
-#' 
-#' test.surrogate.extension.result = test.surrogate.extension(yone, yzero, sone, szero, power.want.s = 0.8, paired = TRUE, alternative = "two.sided")
-
+#' test.surrogate.extension.result = test.surrogate.extension(
+#'   yone, yzero, sone, szero, power.want.s = 0.8, paired = TRUE, alternative = "two.sided"
+#' )
 test.surrogate.extension = function(yone, 
                                     yzero,
                                     sone, 

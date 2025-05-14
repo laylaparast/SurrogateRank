@@ -1,49 +1,55 @@
 #' Calculate Delta: Difference in Rank-based Statistics for Two Outcomes
 #'
-#' This function estimates the difference (`delta`) between two rank-based statistics
-#' (e.g., Wilcoxon statistics or paired ranks) for a primary outcome and a surrogate,
+#' This function estimates the difference (`delta`) between two rank-based statistics 
+#' (e.g., Wilcoxon statistics or paired ranks) for a primary outcome and a surrogate, 
 #' under either an independent or paired design.
 #'
 #' @description
-#' This function calculates the difference in treatment effects on a univariate marker and on a continuous primary response.
-#' This extends the \code{delta.calculate()} function from the \code{SurrogateRank} package to the case where
-#' samples may be paired instead of independent, and where a two sided test is desired.
+#' This function calculates the difference in treatment effects on a univariate marker 
+#' and on a continuous primary response. This extends the \code{delta.calculate()} function 
+#' from the \code{SurrogateRank} package to the case where samples may be paired instead of 
+#' independent, and where a two sided test is desired.
 #' 
 #' @param yone               numeric vector of primary response values in the treated group.
 #' @param yzero              numeric vector of primary response values in the untreated group.
 #' @param sone               matrix or dataframe of surrogate candidates in the treated group 
-#'                           with dimension \code{n1 x p} where n1 is the number of treated samples and p the number of candidates.
-#'                           Sample ordering must match exactly yone. 
+#'                           with dimension \code{n1 x p} where n1 is the number of treated samples 
+#'                           and p the number of candidates. Sample ordering must match exactly 
+#'                           \code{yone}. 
 #' @param szero              matrix or dataframe of surrogate candidates in the untreated group 
-#'                           with dimension \code{n0 x p} where n0 is the number of untreated samples and p the number of candidates.
-#'                           Sample ordering must match exactly yzero.
-#' @param paired             logical flag giving if the data is independent or paired. 
-#'                           If \code{FALSE} (default), samples are assumed independent. 
-#'                           If \code{TRUE}, samples are assumed to be from a paired design. The pairs are specified by matching the rows of 
-#'                           \code{yone} and \code{sone} to the rows of \code{yzero} and \code{szero}.                        
+#'                           with dimension \code{n0 x p} where n0 is the number of untreated 
+#'                           samples and p the number of candidates. Sample ordering must match 
+#'                           exactly \code{yzero}.
+#' @param paired             logical flag giving if the data is independent or paired. If 
+#'                           \code{FALSE} (default), samples are assumed independent. If 
+#'                           \code{TRUE}, samples are assumed to be from a paired design. The 
+#'                           pairs are specified by matching the rows of \code{yone} and 
+#'                           \code{sone} to the rows of \code{yzero} and \code{szero}.
 #'
-#'@return A list with the following elements: \itemize{
+#' @return A list with the following elements: 
+#' \itemize{
 #'   \item{\code{u.y}: Rank-based test statistic for the primary outcome}
 #'   \item{\code{u.s}: Rank-based test statistic for the surrogate}
 #'   \item{\code{delta.estimate}: Estimated difference between outcome and surrogate statistics}
 #'   \item{\code{sd.u.y}: Standard deviation of the outcome statistic}
 #'   \item{\code{sd.u.s}: Standard deviation of the surrogate statistic}
 #'   \item{\code{sd.delta}: Standard error of the delta estimate}
-#'   }
+#' }
+#' 
+#' @import dplyr
+#' @export
+#' @author Arthur Hughes, Layla Parast
 #'
-#'@import dplyr
-#'@author Arthur Hughes, Layla Parast
-#'
-#'@examples
+#' @examples
 #' # Load data
 #' data("example.data")
 #' yone = example.data$y1
 #' yzero = example.data$y0
 #' sone = example.data$s1
 #' szero = example.data$s0
-#' 
-#' delta.calculate.extension.result = delta.calculate.extension(yone, yzero, sone, szero, paired = TRUE)
-
+#' delta.calculate.extension.result = delta.calculate.extension(
+#'   yone, yzero, sone, szero, paired = TRUE
+#' )
 delta.calculate.extension = function(yone, 
                                      yzero,
                                      sone, 

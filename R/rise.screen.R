@@ -1,50 +1,53 @@
-#' Function to perform the screening stage of RISE : Two-Stage Rank-Based Identification of High-Dimensional Surrogate Markers
-#' 
-#' @description
-#' A set of high-dimensional surrogate candidates are screened one-by-one to identify
-#' strong candidates. Strength of surrogacy is assessed through a rank-based measure of the similarity in 
-#' treatment effects on a candidate surrogate and the primary response. P-values corresponding to hypothesis 
-#' testing on this measure are corrected for the high number of statistical tests performed.
-#' 
-#' @param yone               numeric vector of primary response values in the treated group.
-#' @param yzero              numeric vector of primary response values in the untreated group.
-#' @param sone               matrix or dataframe of surrogate candidates in the treated group 
-#'                           with dimension \code{n1 x p} where n1 is the number of treated samples and p the number of candidates.
-#'                           Sample ordering must match exactly yone. 
-#' @param szero              matrix or dataframe of surrogate candidates in the untreated group 
-#'                           with dimension \code{n0 x p} where n0 is the number of untreated samples and p the number of candidates.
-#'                           Sample ordering must match exactly yzero.
-#' @param alpha              significance level for determining surrogate candidates. Default is \code{0.05}.
-#' @param power.want.s       numeric in (0,1) - power desired for a test of treatment effect based on the surrogate candidate. 
-#'                           Either this or \code{epsilon} argument must be specified.
-#' @param epsilon            numeric in (0,1) - non-inferiority margin for determining surrogate validity.
-#'                           Either this or \code{power.want.s} argument must be specified.
-#' @param u.y.hyp            hypothesised value of the treatment effect on the primary response on the probability
-#'                           scale. If not given, it will be estimated based on the observations.
-#' @param p.correction       character. Method for p-value adjustment (see \code{p.adjust()} function).
-#'                           Defaults to the Benjamini-Hochberg method (\code{"BH"}).
-#' @param n.cores            numeric giving the number of cores to commit to parallel computation in order to improve
-#'                           computational time through the \code{pbmcapply()} function. Defaults to \code{1}.
-#' @param alternative        character giving the alternative hypothesis type. One of \code{c("less","two.sided")}, where "less" 
-#'                           corresponds to a non-inferiority test and "two.sided" corresponds to a two one-sided test procedure. Default is 
-#'                           "less".
-#' @param paired             logical flag giving if the data is independent or paired. 
-#'                           If \code{FALSE} (default), samples are assumed independent. 
-#'                           If \code{TRUE}, samples are assumed to be from a paired design. The pairs are specified by matching the rows of 
-#'                           \code{yone} and \code{sone} to the rows of \code{yzero} and \code{szero}.
-#'                           
-#'@param return.all.screen  logical flag. If \code{TRUE} (default), a dataframe will be returned giving the screening results for 
-#'                           all candidates. Else, only the significant candidates will be returned.
-#'           
+#' Function to perform the screening stage of RISE : Two-Stage Rank-Based Identification of 
+#' High-Dimensional Surrogate Markers
 #'
-#'@return a list with elements \itemize{
-#'     \item \code{screening.metrics} : dataframe of screening results (for each candidate marker - delta, CI, sd,epsilon, p-values).
-#'     \item \code{significant.markers}: character vector of markers with \code{p_adjusted < alpha}
-#'     \item \code{screening.weights}: dataframe giving marker names and the inverse absolute value of the associated deltas.
-#'   }
-#' 
-#'@import dplyr pbmcapply
-#'@author Arthur Hughes
+#' @description
+#' A set of high-dimensional surrogate candidates are screened one-by-one to identify strong 
+#' candidates. Strength of surrogacy is assessed through a rank-based measure of the similarity in 
+#' treatment effects on a candidate surrogate and the primary response. P-values corresponding to 
+#' hypothesis testing on this measure are corrected for the high number of statistical tests 
+#' performed.
+#'
+#' @param yone numeric vector of primary response values in the treated group.
+#' @param yzero numeric vector of primary response values in the untreated group.
+#' @param sone matrix or dataframe of surrogate candidates in the treated group with dimension 
+#'   \code{n1 x p} where n1 is the number of treated samples and p the number of candidates. Sample 
+#'   ordering must match exactly yone.
+#' @param szero matrix or dataframe of surrogate candidates in the untreated group with dimension 
+#'   \code{n0 x p} where n0 is the number of untreated samples and p the number of candidates. Sample 
+#'   ordering must match exactly yzero.
+#' @param alpha significance level for determining surrogate candidates. Default is \code{0.05}.
+#' @param power.want.s numeric in (0,1) - power desired for a test of treatment effect based on the 
+#'   surrogate candidate. Either this or \code{epsilon} argument must be specified.
+#' @param epsilon numeric in (0,1) - non-inferiority margin for determining surrogate validity. Either 
+#'   this or \code{power.want.s} argument must be specified.
+#' @param u.y.hyp hypothesised value of the treatment effect on the primary response on the probability 
+#'   scale. If not given, it will be estimated based on the observations.
+#' @param p.correction character. Method for p-value adjustment (see \code{p.adjust()} function). 
+#'   Defaults to the Benjamini-Hochberg method (\code{"BH"}).
+#' @param n.cores numeric giving the number of cores to commit to parallel computation in order to 
+#'   improve computational time through the \code{pbmcapply()} function. Defaults to \code{1}.
+#' @param alternative character giving the alternative hypothesis type. One of 
+#'   \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided" 
+#'   corresponds to a two one-sided test procedure. Default is "less".
+#' @param paired logical flag giving if the data is independent or paired. If \code{FALSE} (default), 
+#'   samples are assumed independent. If \code{TRUE}, samples are assumed to be from a paired design. 
+#'   The pairs are specified by matching the rows of \code{yone} and \code{sone} to the rows of 
+#'   \code{yzero} and \code{szero}.
+#' @param return.all.screen logical flag. If \code{TRUE} (default), a dataframe will be returned giving 
+#'   the screening results for all candidates. Else, only the significant candidates will be returned.
+#'
+#' @return a list with elements \itemize{
+#'   \item \code{screening.metrics} : dataframe of screening results (for each candidate marker - delta, 
+#'     CI, sd, epsilon, p-values).
+#'   \item \code{significant.markers}: character vector of markers with \code{p_adjusted < alpha}
+#'   \item \code{screening.weights}: dataframe giving marker names and the inverse absolute value of the 
+#'     associated deltas.
+#' }
+#'
+#' @import dplyr pbmcapply
+#' @export
+#' @author Arthur Hughes
 #'
 #' @examples
 #' # Load high-dimensional example data
@@ -53,9 +56,7 @@
 #' yzero = example.data.highdim$y0
 #' sone = example.data.highdim$s1
 #' szero = example.data.highdim$s0
-#'
 #' rise.screen.result = rise.screen(yone, yzero, sone, szero, power.want.s = 0.8)
-
 rise.screen = function(yone, 
                        yzero, 
                        sone, 
