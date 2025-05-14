@@ -72,21 +72,19 @@
 #' @import ggplot2
 #' @author Arthur Hughes
 #' 
-#' @references Hughes A., Parast L., Thiébaut R., Hejblum B.P. 
-#' RISE : Two-Stage Rank-Based Identification of High-Dimensional Surrogate Markers Applied to Vaccinology
-#'\href{https://arxiv.org/abs/2502.03030}.
 #' 
 #' 
 #' @examples
 #' # Load high-dimensional example data
-#' data  = get(load("/home/ah3/Bureau/Work/PhD/SurrogateRank-main/data/example.data.highdim.RData"))
-#' yone = data$y1
-#' yzero = data$y0
-#' sone = data$s1
-#' szero = data$s0
+#' data("example.data.highdim")
+#' yone = example.data.highdim$y1
+#' yzero = example.data.highdim$y0
+#' sone = example.data.highdim$s1
+#' szero = example.data.highdim$s0
 #' 
-#' rise.result = test.surrogate.rise(yone, yzero, sone, szero, power.want.s = 0.8, alpha = 0.05, epsilon = NULL, u.y.hyp = NULL,p.correction = "BH", n.cores = 5, alternative = "less", paired = F, screen.proportion = 0.7,return.all.screen = TRUE, return.all.evaluate = TRUE, evaluate.weights = TRUE, return.plot.evaluate = TRUE)
+#' rise.result = test.surrogate.rise(yone, yzero, sone, szero, power.want.s = 0.8)
 #' 
+
 test.surrogate.rise = function(yone, 
                                yzero, 
                                sone, 

@@ -44,6 +44,17 @@
 #' }
 #' 
 #' @import dplyr 
+#' @author Arthur Hughes, Layla Parast
+#' 
+#' @examples
+#' # Load data
+#' data("example.data")
+#' yone = example.data$y1
+#' yzero = example.data$y0
+#' sone = example.data$s1
+#' szero = example.data$s0
+#' 
+#' test.surrogate.extension.result = test.surrogate.extension(yone, yzero, sone, szero, power.want.s = 0.8, paired = TRUE, alternative = "two.sided")
 
 test.surrogate.extension = function(yone, 
                                     yzero,
@@ -76,6 +87,11 @@ test.surrogate.extension = function(yone,
     } else if (length(sone) != length(szero)){
       stop("Paired mode is requested but the number of samples in sone does not match that of szero.")
     }
+  }
+  
+  ## Check that either epsilon or power.want.s is specified
+  if (is.null(epsilon) & is.null(power.want.s)){
+    stop("Must specify either epsilon or power.want.s.")
   }
   
   # Compute treatment effects and standard errors using delta.calculate()
@@ -129,7 +145,7 @@ test.surrogate.extension = function(yone,
   if (alternative == "less"){
     # Compute upper bound of one-sided (1 - alpha) CI for delta = u.y - u.s
     z.alpha = qnorm(1 - alpha)
-    ci.delta = c(-1, dd$delta.estimate + z.alpha * dd$sd.delta)  # CI = (-∞, upper bound]
+    ci.delta = c(-1, dd$delta.estimate + z.alpha * dd$sd.delta)
     
     # Decision rule for non-inferiority:
     # If upper bound of CI is less than epsilon, surrogate is acceptable

@@ -44,7 +44,17 @@
 #'   }
 #' 
 #'@import dplyr pbmcapply
-
+#'@author Arthur Hughes
+#'
+#' @examples
+#' # Load high-dimensional example data
+#' data("example.data.highdim")
+#' yone = example.data.highdim$y1
+#' yzero = example.data.highdim$y0
+#' sone = example.data.highdim$s1
+#' szero = example.data.highdim$s0
+#'
+#' rise.screen.result = rise.screen(yone, yzero, sone, szero, power.want.s = 0.8)
 
 rise.screen = function(yone, 
                        yzero, 

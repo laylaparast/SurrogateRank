@@ -32,6 +32,17 @@
 #'   }
 #'
 #'@import dplyr
+#'@author Arthur Hughes, Layla Parast
+#'
+#'@examples
+#' # Load data
+#' data("example.data")
+#' yone = example.data$y1
+#' yzero = example.data$y0
+#' sone = example.data$s1
+#' szero = example.data$s0
+#' 
+#' delta.calculate.extension.result = delta.calculate.extension(yone, yzero, sone, szero, paired = TRUE)
 
 delta.calculate.extension = function(yone, 
                                      yzero,
