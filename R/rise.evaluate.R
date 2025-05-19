@@ -72,7 +72,6 @@
 #' @import dplyr pbmcapply ggplot2
 #' @export
 #' @author Arthur Hughes
-#'
 #' @examples
 #' # Load high-dimensional example data
 #' data("example.data.highdim")

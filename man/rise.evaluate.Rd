@@ -21,8 +21,7 @@ rise.evaluate(
   return.all.evaluate = TRUE,
   return.plot.evaluate = TRUE,
   evaluate.weights = TRUE,
-  screening.weights = NULL,
-  markers = NULL
+  screening.weights = NULL
 )
 }
 \arguments{
@@ -89,9 +88,6 @@ predicted to be stronger receive more weight.}
 in for the evaluation. Typically this is taken directly from the
 screening stage as the output from the \code{rise.screen()} function.
 Must be given if \code{evaluate.weights} is \code{TRUE}.}
-
-\item{markers}{a vector of marker names (column names of szero and sone) to evaluate.
-If not given, will default to evaluating all markers in the dataframes.}
 }
 \value{
 a list with
