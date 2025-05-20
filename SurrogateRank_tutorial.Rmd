@@ -8,18 +8,14 @@ output:
 knitr::opts_chunk$set(fig.width=13, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
 ```
 
-```{r, message=FALSE, warning=FALSE}
-library(dplyr)
-library(ggplot2)
-library(pbmcapply)
-library(stats)
-```
-
 In this tutorial, we will go through examples using the functions in the **SurrogateRank** package. First, install the package from CRAN and load it.
 
 ```{r results = "hide", message=FALSE}
 #install.packages("SurrogateRank")
 library(SurrogateRank)
+
+# And some other useful packages
+library(dplyr)
 ```
 
 This package uses a rank-based nonparametric approach to evaluate a surrogate marker in a small sample size setting. Details are described in Parast L, Cai T, & Tian L (2024). A rank-based approach to evaluate a surrogate marker in a small sample setting. Biometrics, 80(1), ujad035. This package also implements the rank-based identification of surrogate markers in the high-dimensional setting, described in Hughes A., Parast L., Thiébaut R., Hejblum B.P. (2025). RISE : Two-Stage Rank-Based Identification of High-Dimensional Surrogate Markers Applied to Vaccinology (<https://arxiv.org/abs/2502.03030>). We describe both methods below.
@@ -70,6 +66,15 @@ names(example.data.highdim)
 
 As before, this data contains 25 observations from a treatment group (group 1) and 25 observations from a control group (group 0). As in the other example, **y1** and **y0** are the values of the primary response in the treated and control group, respectively. However, this time, **s1** and **s0** are matrices of 1000 candidate surrogate markers in the treated and control group, respectively. The final element of the data, **hyp**, gives whether the surrogate candidate is valid or not, where 'null false' corresponds to a valid surrogate candidate and 'null true' an invalid surrogate. Of course, we only have this variable because this is simulated data and in practice, we would not have this information; we include it here for illustration. 
 
+Let's first take a look at the **hyp** variable to see which of the 1000 markers are true positives that we hope to be identified by RISE, and which are not. 
+
+```{r}
+which(example.data.highdim[["hyp"]] == 'null false')
+```
+
+So, the first 100 of the simulated markers are true positives, and the remaining 900 are negatives. Let's keep this in mind for later. 
+
+
 RISE works in two stages, which are generally applied on different (random) splits of the data in order to avoid overfitting. The first stage, called screening, allows for a selection of strong candidate surrogates by applying the aforementioned univariate test to each candidate, then correcting the p-values for the high multiplicity of tests. Let's perform the screening stage using the **rise.screen()** function on the example data (without sample splitting).
 
 ```{r}
@@ -86,17 +91,20 @@ Let's check the outputs of this function. The **screening.metrics** element retu
 screen.result[["screening.metrics"]] %>% head()
 ```
 
-The next element **significant.markers** gives the names of the markers which were judged significant at the provided $\alpha$ level (0.05 by default) after test multiplicity correction. Let's print the first few.
+The next element **significant.markers** gives the names of the markers which were judged significant at the provided $\alpha$ level (0.05 by default) after test multiplicity correction. Now, remember that markers 1 through 100 were true positives. Let's check to see how many of our identified positives were true. 
 
 ```{r}
-screen.result[["significant.markers"]] %>% head()
+screen.result[["significant.markers"]]
 ```
 
-How many markers were determined significant?
+All of the claimed positives were truly positive, with no false positives. How many markers in total were determined significant?
 
 ```{r}
 screen.result[["significant.markers"]] %>% length()
 ```
+
+So, 18/100 true positives were not identified. This reflects the fact that the non-parametric methods employed in RISE tend to make it *conservative*. That is, it controls the false positive rate well but may be less powered than parametric methods (when those parametric assumptions hold!).
+
 
 The final element is a data frame giving the weights to pass to the evaluation stage to form a synthetic marker as a weighted, standardised sum of the markers screened as significant in the screening stage. These weights are the inverse of the absolute delta values from the screening stage.
 
@@ -129,17 +137,21 @@ evaluate.results[["gamma.s"]][["gamma.s.one"]] %>% head() # treated gamma
 evaluate.results[["gamma.s"]][["gamma.s.zero"]] %>% head()# untreated gamma
 ```
 
-The third element **gamma.s.evaluate** gives us the results of the testing of gamma as a univariate surrogate in the evaluation data.
+We see that the values of the composite surrogate are large and positive in the treated group, and large and negative in the untreated group, suggesting good separation of treatment groups by this variable. We can see that more formally in the third element **gamma.s.evaluate**, which gives us the results of the testing of gamma as a univariate surrogate in the evaluation data.
 
 ```{r}
 evaluate.results[["gamma.s.evaluate"]]
 ```
 
-The final element, **gamma.s.plot**, gives us a plot of the composite marker gamma.s against the response in the evaluation data.
+The small delta value and p-value provide us evidence that this composite marker is a strong trial-level surrogate in this data. 
+
+The final element, **gamma.s.plot**, gives us a plot of the rankings of the composite marker gamma.s against the response in the evaluation data.
 
 ```{r}
 evaluate.results[["gamma.s.plot"]]
 ```
+
+If gamma is a strong trial-level surrogate, we expect separation of the treatment groups by gamma to be similar to that by the primary outcome. In this case, this is what we see. We may also have high correlation between the **values** of the primary response and gamma (i.e. the points follow the diagonal line closely). In the literature, this is often called a **individual-level surrogate**.
 
 We can also apply both stages of RISE together with the function **test.surrogate.rise()**. This gives us two elements, **screening.results** and **evaluation.results** which are exactly the outputs of the individual screening and evaluation functions as explained above. Note that this function automatically performs random sample splitting on the data, by default at ratio screening:evaluation of 2:1. This ratio is controlled by the **screen.proportion** argument. If this is set to 1, the screening and evaluation are performed on the same dataset.
 
@@ -164,6 +176,8 @@ Now, what were the resulting metrics and plot in the 1/3 of the data left for ev
 test.surrogate.rise.result[["evaluation.results"]][["gamma.s.evaluate"]]
 test.surrogate.rise.result[["evaluation.results"]][["gamma.s.plot"]]
 ```
+
+We also see good separation of the treatment groups on the plot, corresponding to small values of delta and the p-value, indicating that RISE identified a strong combined surrogate, evaluated on independent data. 
 
 That's all for now!
 
