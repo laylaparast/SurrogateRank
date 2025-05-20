@@ -2,7 +2,7 @@
 % Please edit documentation in R/test.surrogate.rise.R
 \name{test.surrogate.rise}
 \alias{test.surrogate.rise}
-\title{Function to perform RISE : Two-Stage Rank-Based Identification of High-Dimensional Surrogate Markers}
+\title{Performs RISE: Two-Stage Rank-Based Identification of High-Dimensional Surrogate Markers}
 \usage{
 test.surrogate.rise(
   yone,
@@ -131,7 +131,8 @@ yone <- example.data.highdim$y1
 yzero <- example.data.highdim$y0
 sone <- example.data.highdim$s1
 szero <- example.data.highdim$s0
-rise.result <- test.surrogate.rise(yone, yzero, sone, szero, power.want.s = 0.8)
+\donttest{
+rise.result <- test.surrogate.rise(yone, yzero, sone, szero, power.want.s = 0.8)}
 }
 \author{
 Arthur Hughes

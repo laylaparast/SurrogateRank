@@ -2,7 +2,7 @@
 % Please edit documentation in R/test.surrogate.extension.R
 \name{test.surrogate.extension}
 \alias{test.surrogate.extension}
-\title{Function to test for trial-level surrogacy of a single marker extended to the paired,
+\title{Tests whether the surrogate is valid, extended to the paired,
 two sided test setting}
 \usage{
 test.surrogate.extension(
@@ -62,23 +62,20 @@ pairs are specified by matching the rows of \code{yone} and
 \value{
 A list containing:
 \itemize{
-\item{\code{u.y}}{Estimated rank-based treatment effect on the outcome.}
-\item{\code{u.s}}{Estimated rank-based treatment effect on the surrogate.}
-\item{\code{delta.estimate}}{Estimated difference in treatment effects: \code{u.y - u.s}.}
-\item{\code{sd.u.y}}{Standard deviation of \code{u.y}.}
-\item{\code{sd.u.s}}{Standard deviation of \code{u.s}.}
-\item{\code{sd.delta}}{Standard deviation of \code{delta.estimate}.}
-\item{\code{ci.delta}}{One-sided confidence interval upper bound for \code{delta.estimate}.}
-\item{\code{p.delta}}{p-value for validity of trial-level surrogacy.}
-\item{\code{epsilon.used}}{Non-inferiority threshold used in the test.}
-\item{\code{is.surrogate}}{\code{TRUE} if the surrogate passes the test, else \code{FALSE}.}
+  \item \code{u.y} Estimated rank-based treatment effect on the outcome.
+  \item \code{u.s} Estimated rank-based treatment effect on the surrogate.
+  \item \code{delta.estimate} Estimated difference in treatment effects: \code{u.y - u.s}.
+  \item \code{sd.u.y} Standard deviation of \code{u.y}.
+  \item \code{sd.u.s} Standard deviation of \code{u.s}.
+  \item \code{sd.delta} Standard deviation of \code{delta.estimate}.
+  \item \code{ci.delta} One-sided confidence interval upper bound for \code{delta.estimate}.
+  \item \code{p.delta} p-value for validity of trial-level surrogacy.
+  \item \code{epsilon.used} Non-inferiority threshold used in the test.
+  \item \code{is.surrogate} \code{TRUE} if the surrogate passes the test, else \code{FALSE}.
 }
 }
 \description{
-This function tests for surrogacy of a univariate marker with respect to a continuous primary
-response. This extends the \code{test.surrogate()} function from the \code{SurrogateRank}
-package to the case where samples may be paired instead of independent, and where a two sided
-test is desired.
+Calculates the rank-based test statistic for Y and the rank-based test statistic for S and the difference, delta, along with corresponding standard error estimates, then tests whether the surrogate is valid. This extends the \code{test.surrogate()} function to the case where samples may be paired instead of independent, and where a two sided test is desired.
 }
 \examples{
 # Load data

@@ -203,7 +203,7 @@ test.surrogate.rise <- function(yone,
 
   # STEP 1 : SCREENING
 
-  print(paste0("Screening step in progress."))
+  #print(paste0("Screening step in progress."))
 
   screening.results <- rise.screen(
     yone = yone.screen,
@@ -231,7 +231,7 @@ test.surrogate.rise <- function(yone,
     as.data.frame() %>%
     dplyr::select(any_of(screening.results$significant.markers))
 
-  print(paste0("Evaluation step in progress."))
+ # print(paste0("Evaluation step in progress."))
 
   evaluation.results <- rise.evaluate(
     yone = yone.evaluate,

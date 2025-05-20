@@ -2,7 +2,7 @@
 % Please edit documentation in R/rise.screen.R
 \name{rise.screen}
 \alias{rise.screen}
-\title{Function to perform the screening stage of RISE : Two-Stage Rank-Based Identification of
+\title{Perform the screening stage of RISE: Two-Stage Rank-Based Identification of
 High-Dimensional Surrogate Markers}
 \usage{
 rise.screen(
@@ -86,7 +86,9 @@ yone <- example.data.highdim$y1
 yzero <- example.data.highdim$y0
 sone <- example.data.highdim$s1
 szero <- example.data.highdim$s0
+\donttest{
 rise.screen.result <- rise.screen(yone, yzero, sone, szero, power.want.s = 0.8)
+}
 }
 \author{
 Arthur Hughes
