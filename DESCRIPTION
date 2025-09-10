@@ -1,12 +1,12 @@
 Package: SurrogateRank
 Type: Package
 Title: Rank-Based Test to Evaluate a Surrogate Marker
-Version: 2.0
+Version: 2.1
 Authors@R: c(person("Layla", "Parast", role = c("aut", "cre"), email = "parast@austin.utexas.edu"), person("Arthur", "Hughes", role = c("aut"), email = "arthur.hughes@u-bordeaux.fr"))
 Description: Uses a novel rank-based nonparametric approach to evaluate a surrogate marker
   in a small sample size setting. Details are described in Parast et al (2024)
   <doi:10.1093/biomtc/ujad035> and Hughes A et al (2025)
-  <doi:10.48550/arXiv.2502.03030>. A tutorial for this package can be found at
+  <doi:10.1002/sim.70241>. A tutorial for this package can be found at
   <https://www.laylaparast.com/surrogaterank> and a Shiny App 
   implementing the package can be found at 
   <https://parastlab.shinyapps.io/SurrogateRankApp/>.
