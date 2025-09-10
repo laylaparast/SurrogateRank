@@ -18,7 +18,7 @@ library(SurrogateRank)
 library(dplyr)
 ```
 
-This package uses a rank-based nonparametric approach to evaluate a surrogate marker in a small sample size setting. Details are described in Parast L, Cai T, & Tian L (2024). A rank-based approach to evaluate a surrogate marker in a small sample setting. Biometrics, 80(1), ujad035. This package also implements the rank-based identification of surrogate markers in the high-dimensional setting, described in Hughes A., Parast L., Thiébaut R., Hejblum B.P. (2025). RISE : Two-Stage Rank-Based Identification of High-Dimensional Surrogate Markers Applied to Vaccinology (<https://arxiv.org/abs/2502.03030>). We describe both methods below.
+This package uses a rank-based nonparametric approach to evaluate a surrogate marker in a small sample size setting. Details are described in Parast L, Cai T, & Tian L (2024). A rank-based approach to evaluate a surrogate marker in a small sample setting. Biometrics, 80(1), ujad035. This package also implements the rank-based identification of surrogate markers in the high-dimensional setting, described in Hughes A., Parast L., Thiébaut R., Hejblum B.P. (2025). RISE : Two-Stage Rank-Based Identification of High-Dimensional Surrogate Markers Applied to Vaccinology. Statistics in Medicine, 44(20-22): e70241. We describe both methods below.
 
 If you are viewing the html version of this tutorial, you can find the R markdown file here: <https://github.com/laylaparast/SurrogateRank>. It is the file called SurrogateRank_tutorial.Rmd.
 
