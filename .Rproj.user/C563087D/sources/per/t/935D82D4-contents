@@ -249,12 +249,12 @@ rise.screen <- function(yone,
     max.weight = max(screening.weights$weight)
     
     screening.weights = screening.weights %>%
-      mutate(weight_unstandardised = weight) %>%
+      mutate(weight_raw = weight) %>%
       mutate(weight = ifelse(marker %in% significant_markers, weight /
                                max.weight, NA))
   } else if (!normalise.weights) {
     screening.weights = screening.weights %>%
-      mutate(weight_unstandardised = weight)
+      mutate(weight_raw = weight)
   }
   
   # If desired that only significant weights be returned
