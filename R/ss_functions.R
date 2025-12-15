@@ -70,6 +70,8 @@ test.surrogate <- function(full.data = NULL, yone = NULL, yzero = NULL, sone = N
     } else {
       epsilon <- u.y.hyp - u.s.power
     }
+    #correction 9/8/25 - LP
+    epsilon = max(c(0,epsilon))
   }
   if (ci.delta[2] < epsilon) {
     is.surrogate <- TRUE

@@ -11,4 +11,4 @@ in a Small Sample Setting. Biometrics, 80(1): ujad035.  [doi:10.1093/biomtc/ujad
 
 The package also implements the nonparametric approach in the high-dimensional setting. Details are described in Hughes A, Parast L, Thiébaut R, Hejblum BP (2025). RISE : Two-Step Rank-Based Identification of High-Dimensional Surrogate Markers Applied to Vaccinology. ArXiv [https://arxiv.org/abs/2502.03030](https://arxiv.org/abs/2502.03030). 
 
-Go here to view a tutorial for this package: [SurrogateRank Tutorial](https://htmlpreview.github.io/?https://github.com/laylaparast/SurrogateRank/blob/main/SurrogateRank_tutorial.html)  
+Go here to view a tutorial for this package: [SurrogateRank Tutorial](https://htmlpreview.github.io/?https://github.com/laylaparast/SurrogateRank/blob/main/SurrogateRank_tutorial.html).  We also have a shiny app implementing these methods [here](https://parastlab.shinyapps.io/SurrogateRankApp/). 

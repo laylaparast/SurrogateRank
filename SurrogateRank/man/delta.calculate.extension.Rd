@@ -2,7 +2,7 @@
 % Please edit documentation in R/delta.calculate.extension.R
 \name{delta.calculate.extension}
 \alias{delta.calculate.extension}
-\title{Calculate Delta: Difference in Rank-based Statistics for Two Outcomes}
+\title{Calculates the rank-based test statistic for Y and S and the difference, delta, accomodating paired data and allowing for a two-sided test}
 \usage{
 delta.calculate.extension(yone, yzero, sone, szero, paired = FALSE)
 }
@@ -30,18 +30,17 @@ pairs are specified by matching the rows of \code{yone} and
 \value{
 A list with the following elements:
 \itemize{
-\item \code{u.y}: Rank-based test statistic for the primary outcome
-\item \code{u.s}: Rank-based test statistic for the surrogate
-\item \code{delta.estimate}: Estimated difference between outcome and surrogate statistics
-\item \code{sd.u.y}: Standard deviation of the outcome statistic
-\item \code{sd.u.s}: Standard deviation of the surrogate statistic
-\item \code{sd.delta}: Standard error of the delta estimate
+\item{\code{u.y}: Rank-based test statistic for the primary outcome}
+\item{\code{u.s}: Rank-based test statistic for the surrogate}
+\item{\code{delta.estimate}: Estimated difference between outcome and surrogate statistics}
+\item{\code{sd.u.y}: Standard deviation of the outcome statistic}
+\item{\code{sd.u.s}: Standard deviation of the surrogate statistic}
+\item{\code{sd.delta}: Standard error of the delta estimate}
 }
 }
 \description{
 This function calculates the difference in treatment effects on a univariate marker
-and on a continuous primary response. This extends the \code{delta.calculate()} function
-from the \code{SurrogateRank} package to the case where samples may be paired instead of
+and on a continuous primary response. This extends the \code{delta.calculate()} function to the case where samples may be paired instead of
 independent, and where a two sided test is desired.
 }
 \details{

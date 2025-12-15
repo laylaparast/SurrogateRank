@@ -40,16 +40,16 @@
 #'
 #' @return A list containing:
 #' \itemize{
-#'   \item{\code{u.y}}{Estimated rank-based treatment effect on the outcome.}
-#'   \item{\code{u.s}}{Estimated rank-based treatment effect on the surrogate.}
-#'   \item{\code{delta.estimate}}{Estimated difference in treatment effects: \code{u.y - u.s}.}
-#'   \item{\code{sd.u.y}}{Standard deviation of \code{u.y}.}
-#'   \item{\code{sd.u.s}}{Standard deviation of \code{u.s}.}
-#'   \item{\code{sd.delta}}{Standard deviation of \code{delta.estimate}.}
-#'   \item{\code{ci.delta}}{One-sided confidence interval upper bound for \code{delta.estimate}.}
-#'   \item{\code{p.delta}}{p-value for validity of trial-level surrogacy.}
-#'   \item{\code{epsilon.used}}{Non-inferiority threshold used in the test.}
-#'   \item{\code{is.surrogate}}{\code{TRUE} if the surrogate passes the test, else \code{FALSE}.}
+#'   \item \code{u.y}: Estimated rank-based treatment effect on the outcome.
+#'   \item \code{u.s}: Estimated rank-based treatment effect on the surrogate.
+#'   \item \code{delta.estimate}: Estimated difference in treatment effects: \code{u.y - u.s}.
+#'   \item \code{sd.u.y}: Standard deviation of \code{u.y}.
+#'   \item \code{sd.u.s}: Standard deviation of \code{u.s}.
+#'   \item \code{sd.delta}: Standard deviation of \code{delta.estimate}.
+#'   \item \code{ci.delta}: One-sided confidence interval upper bound for \code{delta.estimate}.
+#'   \item \code{p.delta}: p-value for validity of trial-level surrogacy.
+#'   \item \code{epsilon.used}: Non-inferiority threshold used in the test.
+#'   \item \code{is.surrogate}: \code{TRUE} if the surrogate passes the test, else \code{FALSE}.
 #' }
 #'
 #' @import dplyr
@@ -128,8 +128,12 @@ test.surrogate.extension <- function(yone,
     # Estimate epsilon as the difference between observed u.y (or hypothesized) and u.s under power
     if (is.null(u.y.hyp)) {
       epsilon <- dd$u.y - u.s.power
+      #correction 9/8/25 - LP
+      epsilon = max(c(0,epsilon))
     } else {
       epsilon <- u.y.hyp - u.s.power
+      #correction 9/8/25 - LP
+      epsilon = max(c(0,epsilon))
     }
   } else if (is.null(epsilon) & paired) {
     # If epsilon is not provided, estimate it based on power.want.s
@@ -148,8 +152,12 @@ test.surrogate.extension <- function(yone,
     # Estimate epsilon as the difference between observed u.y (or hypothesized) and u.s under power
     if (is.null(u.y.hyp)) {
       epsilon <- dd$u.y - u.s.power
+      #correction 9/8/25 - LP
+      epsilon = max(c(0,epsilon))
     } else {
       epsilon <- u.y.hyp - u.s.power
+      #correction 9/8/25 - LP
+      epsilon = max(c(0,epsilon))
     }
   }
 

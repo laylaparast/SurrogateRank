@@ -61,14 +61,29 @@
 #'                             returned allowing the user to visualise the association between the
 #'                             composite surrogate on the individual-scale.
 #' @param evaluate.weights   logical flag. If \code{TRUE} (default), the composite surrogate is
-#'                           constructed with weights as the absolute value of the inverse of the delta
-#'                           values of each candidate, such that surrogates which are predicted to be
+#'                           constructed with weights such that surrogates which are predicted to be
 #'                           stronger receive more weight.
+#' @param return.all.weights logical flag. If \code{FALSE} (default), a dataframe will be returned giving
+#'   weights for significant markers screened. If \code{TRUE}, weights for all markers will be returned. Note
+#'   that, if normalised weights are required, these will only be returned for significant markers, and raw
+#'   weights will be returned in a second column.
+#'
+#' @param weight.mode character giving the type of weighting to return. One of
+#'   \code{c("inverse.delta","diff.epsilon", or "none")}. The default is \code{"inverse.delta"}, which means
+#'   the weights are determined by taking the inverse of the absolute values of delta. If delta is exactly 0,
+#'   this is uncomputable and the weight defaults to the inverse of the next closest absolute delta value. If
+#'   delta is very close to 0, these estimates can be unstable and extreme. The \code{"diff.epsilon"} option
+#'   seeks to aid this by calculating weights as the proportion of the interval between 0 and epsilon cut by
+#'   the absolute value of delta, therefore giving delta = 0 a weight of 1 and delta = epsilon a weight of 0.
+#'   When \code{"none"}, the weights are set to 1 for every marker.
+#'
+#' @param normalise.weights logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
+#'   all the weights such that the maximum weight is 1, which can help with interpretability.
 #'
 #' @return a list with \itemize{
 #'   \item \code{screening.results}: a list with \itemize{
-#'     \item \code{screening.metrics} : dataframe of screening results (for each candidate marker -
-#'           delta, CI, sd, epsilon, p-values).
+#'     \item \code{screening.metrics} : dataframe of screening results (for each candidate marker - number of observations n,
+#'     u.y, u.s, delta, CI, sd, epsilon, p-values)
 #'     \item \code{significant_markers}: character vector of markers with \code{p_adjusted < alpha}.
 #'   }
 #'   \item \code{evaluate.results}: a list with \itemize{
@@ -89,12 +104,12 @@
 #' @author Arthur Hughes
 #' @examples
 #' # Load high-dimensional example data
-#' data("example.data.highdim")
-#' yone <- example.data.highdim$y1
-#' yzero <- example.data.highdim$y0
-#' sone <- example.data.highdim$s1
-#' szero <- example.data.highdim$s0
-#' rise.result <- test.surrogate.rise(yone, yzero, sone, szero, power.want.s = 0.8)
+# data("example.data.highdim")
+# yone <- example.data.highdim$y1
+# yzero <- example.data.highdim$y0
+# sone <- example.data.highdim$s1
+# szero <- example.data.highdim$s0
+# rise.result <- test.surrogate.rise(yone, yzero, sone, szero, power.want.s = 0.8)
 test.surrogate.rise <- function(yone,
                                 yzero,
                                 sone,
@@ -111,34 +126,37 @@ test.surrogate.rise <- function(yone,
                                 return.all.screen = TRUE,
                                 return.all.evaluate = TRUE,
                                 return.plot.evaluate = TRUE,
-                                evaluate.weights = TRUE) {
+                                evaluate.weights = TRUE,
+                                return.all.weights = FALSE,
+                                weight.mode = "inverse.delta",
+                                normalise.weights = T) {
   # Data formatting
   ## Convert dataframes to numeric matrices
   if (is.data.frame(sone) | is.data.frame(szero)) {
     sone <- as.matrix(sone)
     szero <- as.matrix(szero)
   }
-
+  
   # If no column names on surrogate candidates, set them as the column indices
   if (is.null(colnames(sone))) {
     colnames(sone) <- paste0("marker", 1:ncol(sone))
     colnames(szero) <- paste0("marker", 1:ncol(szero))
   }
-
+  
   # Validity checks
-
+  
   ## Check same number of samples in primary response and surrogates
   n0 <- length(yzero)
   n1 <- length(yone)
-
+  
   if (nrow(szero) != n0) {
     stop("szero does not have the same number of samples as yzero.")
   }
-
+  
   if (nrow(sone) != n1) {
     stop("sone does not have the same number of samples as yone.")
   }
-
+  
   ## if in paired mode, yone/sone must have exactly the same number of samples as yzero/szero
   if (paired) {
     if (length(yone) != length(yzero)) {
@@ -147,64 +165,64 @@ test.surrogate.rise <- function(yone,
       stop("Paired mode is requested but the number of samples in sone does not match that of szero.")
     }
   }
-
+  
   ## Check that either epsilon or power.want.s is specified
   if (is.null(epsilon) & is.null(power.want.s)) {
     stop("Must specify either epsilon or power.want.s.")
   }
-
+  
   # STEP 0 : Sample splitting
   ## Assign participants to either screening or evaluation
   ### If in the independent sample setting, we must split the same proportion in both treatment groups
   if (!paired) {
     split.indices.one <- sample(seq_len(n1),
-      size = screen.proportion * n1
+                                size = screen.proportion * n1
     )
     split.indices.zero <- sample(seq_len(n0),
-      size = screen.proportion * n0
+                                 size = screen.proportion * n0
     )
-
+    
     sone.screen <- sone[split.indices.one, ]
     szero.screen <- szero[split.indices.zero, ]
     yone.screen <- yone[split.indices.one]
     yzero.screen <- yzero[split.indices.zero]
-
+    
     sone.evaluate <- sone[-split.indices.one, ]
     szero.evaluate <- szero[-split.indices.zero, ]
     yone.evaluate <- yone[-split.indices.one]
     yzero.evaluate <- yzero[-split.indices.zero]
   } else if (paired) {
     split.indices <- sample(seq_len(n1),
-      size = screen.proportion * n1
+                            size = screen.proportion * n1
     )
-
+    
     sone.screen <- sone[split.indices, ]
     szero.screen <- szero[split.indices, ]
     yone.screen <- yone[split.indices]
     yzero.screen <- yzero[split.indices]
-
+    
     sone.evaluate <- sone[-split.indices, ]
     szero.evaluate <- szero[-split.indices, ]
     yone.evaluate <- yone[-split.indices]
     yzero.evaluate <- yzero[-split.indices]
   }
-
+  
   if (screen.proportion == 1) {
     sone.screen <- sone
     szero.screen <- szero
     yone.screen <- yone
     yzero.screen <- yzero
-
+    
     sone.evaluate <- sone
     szero.evaluate <- szero
     yone.evaluate <- yone
     yzero.evaluate <- yzero
   }
-
+  
   # STEP 1 : SCREENING
-
+  
   print(paste0("Screening step in progress."))
-
+  
   screening.results <- rise.screen(
     yone = yone.screen,
     yzero = yzero.screen,
@@ -218,42 +236,61 @@ test.surrogate.rise <- function(yone,
     n.cores,
     alternative,
     paired,
-    return.all.screen
+    return.all.screen,
+    return.all.weights,
+    weight.mode,
+    normalise.weights
   )
-
-  # STEP 2 : Evaluation
-  ## Filter the data to only contain the strong candidates
-  sone.evaluate <- sone.evaluate %>%
-    as.data.frame() %>%
-    dplyr::select(any_of(screening.results$significant.markers))
-
-  szero.evaluate <- szero.evaluate %>%
-    as.data.frame() %>%
-    dplyr::select(any_of(screening.results$significant.markers))
-
-  print(paste0("Evaluation step in progress."))
-
-  evaluation.results <- rise.evaluate(
-    yone = yone.evaluate,
-    yzero = yzero.evaluate,
-    sone = sone.evaluate,
-    szero = szero.evaluate,
-    alpha,
-    power.want.s,
-    epsilon,
-    u.y.hyp,
-    p.correction,
-    n.cores,
-    alternative,
-    paired,
-    return.all.evaluate,
-    return.plot.evaluate,
-    screening.weights = screening.results$screening.weights,
-    evaluate.weights
-  )
-
-  return(list(
-    screening.results = screening.results,
-    evaluation.results = evaluation.results
-  ))
+  
+  if (length(screening.results[["significant.markers"]]) == 0){
+    
+    cat("No surrogate candidates found in screening stage. 
+        This suggests either no true signal or low power.
+        You might want to try again by either 
+        increasing the amount of samples committed to screening to increase power,
+        or by relaxing the conditions for a valid surrogate 
+        (e.g. lower power.want.s or increase epsilon, change p.correction).")
+    
+    return(list(
+      screening.results = screening.results,
+      evaluation.results = NULL
+    ))
+  } else {
+    
+    # STEP 2 : Evaluation
+    ## Filter the data to only contain the strong candidates
+    sone.evaluate <- sone.evaluate %>%
+      as.data.frame() %>%
+      dplyr::select(any_of(screening.results$significant.markers))
+    
+    szero.evaluate <- szero.evaluate %>%
+      as.data.frame() %>%
+      dplyr::select(any_of(screening.results$significant.markers))
+    
+    print(paste0("Evaluation step in progress."))
+    
+    evaluation.results <- rise.evaluate(
+      yone = yone.evaluate,
+      yzero = yzero.evaluate,
+      sone = sone.evaluate,
+      szero = szero.evaluate,
+      alpha,
+      power.want.s,
+      epsilon,
+      u.y.hyp,
+      p.correction,
+      n.cores,
+      alternative,
+      paired,
+      return.all.evaluate,
+      return.plot.evaluate,
+      screening.weights = screening.results$screening.weights,
+      evaluate.weights
+    )
+    
+    return(list(
+      screening.results = screening.results,
+      evaluation.results = evaluation.results
+    ))
+  }
 }
