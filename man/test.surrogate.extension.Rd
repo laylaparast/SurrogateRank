@@ -62,16 +62,16 @@ pairs are specified by matching the rows of \code{yone} and
 \value{
 A list containing:
 \itemize{
-  \item \code{u.y} Estimated rank-based treatment effect on the outcome.
-  \item \code{u.s} Estimated rank-based treatment effect on the surrogate.
-  \item \code{delta.estimate} Estimated difference in treatment effects: \code{u.y - u.s}.
-  \item \code{sd.u.y} Standard deviation of \code{u.y}.
-  \item \code{sd.u.s} Standard deviation of \code{u.s}.
-  \item \code{sd.delta} Standard deviation of \code{delta.estimate}.
-  \item \code{ci.delta} One-sided confidence interval upper bound for \code{delta.estimate}.
-  \item \code{p.delta} p-value for validity of trial-level surrogacy.
-  \item \code{epsilon.used} Non-inferiority threshold used in the test.
-  \item \code{is.surrogate} \code{TRUE} if the surrogate passes the test, else \code{FALSE}.
+\item \code{u.y}: Estimated rank-based treatment effect on the outcome.
+\item \code{u.s}: Estimated rank-based treatment effect on the surrogate.
+\item \code{delta.estimate}: Estimated difference in treatment effects: \code{u.y - u.s}.
+\item \code{sd.u.y}: Standard deviation of \code{u.y}.
+\item \code{sd.u.s}: Standard deviation of \code{u.s}.
+\item \code{sd.delta}: Standard deviation of \code{delta.estimate}.
+\item \code{ci.delta}: One-sided confidence interval upper bound for \code{delta.estimate}.
+\item \code{p.delta}: p-value for validity of trial-level surrogacy.
+\item \code{epsilon.used}: Non-inferiority threshold used in the test.
+\item \code{is.surrogate}: \code{TRUE} if the surrogate passes the test, else \code{FALSE}.
 }
 }
 \description{

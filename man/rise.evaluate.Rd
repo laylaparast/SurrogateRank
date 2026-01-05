@@ -81,8 +81,7 @@ returned allowing the user to visualise the association between the
 composite surrogate on the individual-scale.}
 
 \item{evaluate.weights}{logical flag. If \code{TRUE} (default), the composite surrogate is
-constructed with weights as the absolute value of the inverse of the
-delta values of each candidate, such that surrogates which are
+constructed with weights such that surrogates which are
 predicted to be stronger receive more weight.}
 
 \item{screening.weights}{dataframe with columns \code{marker} and \code{weight} giving the weight

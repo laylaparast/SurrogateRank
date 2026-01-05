@@ -2,6 +2,8 @@
 title: "Tutorial for main functions in SurrogateRank package"
 output:
   html_document:
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r global_options, echo=FALSE}
@@ -106,11 +108,13 @@ screen.result[["significant.markers"]] %>% length()
 So, 18/100 true positives were not identified. This reflects the fact that the non-parametric methods employed in RISE tend to make it *conservative*. That is, it controls the false positive rate well but may be less powered than parametric methods (when those parametric assumptions hold!).
 
 
-The final element is a data frame giving the weights to pass to the evaluation stage to form a synthetic marker as a weighted, standardised sum of the markers screened as significant in the screening stage. These weights are the inverse of the absolute delta values from the screening stage.
+The final element is a data frame giving the weights to pass to the evaluation stage to form a synthetic marker as a weighted, standardised sum of the markers screened as significant in the screening stage. We give a couple of different options for how to specify these weights. The default option, specified by setting \code{weight.mode = "inverse.delta"} in \code{rise.screen()}, sets the weights as the inverse of the estimated delta values. Let's have a look at the weights given by the function
 
 ```{r}
 screen.result[["screening.weights"]] %>% head()
 ```
+
+The \code{weight_raw} column gives the pre-normalised weights (i.e. simply the inverse of the delta values). The \code{weight} column divides these weights by the maximum weight, such that the weights now represent a proportion of the maximum value. This is simply for easier interpretation, as using the raw or standardised weights will not change the results of the evaluation. This is because RISE is invariant to **monotonic** (i.e. rank-preserving) transformations. 
 
 Now let's perform the evaluation stage using the **rise.evaluate()** function. For simplicity, let's evaluate on the same data on which we screened. Although, in practice, you should probably perform sample splitting on the data to avoid overfitting bias. Note that we have to pass some elements from the screening stage into this function (the names of the significant markers and the weights).
 
@@ -151,7 +155,7 @@ The final element, **gamma.s.plot**, gives us a plot of the rankings of the comp
 evaluate.results[["gamma.s.plot"]]
 ```
 
-If gamma is a strong trial-level surrogate, we expect separation of the treatment groups by gamma to be similar to that by the primary outcome. In this case, this is what we see. We may also have high correlation between the **values** of the primary response and gamma (i.e. the points follow the diagonal line closely). In the literature, this is often called a **individual-level surrogate**.
+If gamma is a strong trial-level surrogate, we expect separation of the treatment groups by gamma to be similar to that by the primary outcome. In this case, this is what we see, and this is made explicit by the annotation of the value of delta for the combined marker, which is close to 0. We may also have high spearman correlation between the **values** of the primary response and gamma (i.e. the points follow the diagonal line closely). A high level of correlation on the individual-level is a property of what is referred to in the literature as **individual-level surrogate markers**. While RISE is a method made for identifying **trial-level surrogate markers**, it is still interesting to see where trial- and individual-level properties may co-occur.
 
 We can also apply both stages of RISE together with the function **test.surrogate.rise()**. This gives us two elements, **screening.results** and **evaluation.results** which are exactly the outputs of the individual screening and evaluation functions as explained above. Note that this function automatically performs random sample splitting on the data, by default at ratio screening:evaluation of 2:1. This ratio is controlled by the **screen.proportion** argument. If this is set to 1, the screening and evaluation are performed on the same dataset.
 
@@ -177,7 +181,7 @@ test.surrogate.rise.result[["evaluation.results"]][["gamma.s.evaluate"]]
 test.surrogate.rise.result[["evaluation.results"]][["gamma.s.plot"]]
 ```
 
-We also see good separation of the treatment groups on the plot, corresponding to small values of delta and the p-value, indicating that RISE identified a strong combined surrogate, evaluated on independent data. 
+We also see good separation of the treatment groups on the plot, corresponding to small values of delta and the p-value, indicating that RISE identified a strong combined trial-level surrogate, evaluated on independent data. 
 
 That's all for now!
 

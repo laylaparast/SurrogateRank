@@ -18,7 +18,10 @@ rise.screen(
   n.cores = 1,
   alternative = "less",
   paired = FALSE,
-  return.all.screen = TRUE
+  return.all.screen = TRUE,
+  return.all.weights = FALSE,
+  weight.mode = "inverse.delta",
+  normalise.weights = T
 )
 }
 \arguments{
@@ -62,11 +65,28 @@ The pairs are specified by matching the rows of \code{yone} and \code{sone} to t
 
 \item{return.all.screen}{logical flag. If \code{TRUE} (default), a dataframe will be returned giving
 the screening results for all candidates. Else, only the significant candidates will be returned.}
+
+\item{return.all.weights}{logical flag. If \code{FALSE} (default), a dataframe will be returned giving
+weights for significant markers screened. If \code{TRUE}, weights for all markers will be returned. Note
+that, if normalised weights are required, these will only be returned for significant markers, and raw
+weights will be returned in a second column.}
+
+\item{weight.mode}{character giving the type of weighting to return. One of
+\code{c("inverse.delta","diff.epsilon", or "none")}. The default is \code{"inverse.delta"}, which means
+the weights are determined by taking the inverse of the absolute values of delta. If delta is exactly 0,
+this is uncomputable and the weight defaults to the inverse of the next closest absolute delta value. If
+delta is very close to 0, these estimates can be unstable and extreme. The \code{"diff.epsilon"} option
+seeks to aid this by calculating weights as the proportion of the interval between 0 and epsilon cut by
+the absolute value of delta, therefore giving delta = 0 a weight of 1 and delta = epsilon a weight of 0.
+When \code{"none"}, the weights are set to 1 for every marker.}
+
+\item{normalise.weights}{logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
+all the weights such that the maximum weight is 1, which can help with interpretability.}
 }
 \value{
 a list with elements \itemize{
-\item \code{screening.metrics} : dataframe of screening results (for each candidate marker - delta,
-CI, sd, epsilon, p-values).
+\item \code{screening.metrics} : dataframe of screening results (for each candidate marker - number of observations n,
+u.y, u.s, delta, CI, sd, epsilon, p-values).
 \item \code{significant.markers}: character vector of markers with \code{p_adjusted < alpha}
 \item \code{screening.weights}: dataframe giving marker names and the inverse absolute value of the
 associated deltas.
