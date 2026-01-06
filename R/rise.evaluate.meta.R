@@ -278,8 +278,26 @@ rise.evaluate.meta = function(yone,
   # Bind the per-study results into a dataframe
   evaluation.metrics.study <- bind_rows(rise.evaluate.results.allstudies)
   
+  # If some studies have exactly 0 standard error, report this
+  if (any(evaluation.metrics.study$sd == 0)) {
+    sd0.studies = evaluation.metrics.study %>%
+      filter(sd == 0) %>%
+      pull(study)
+    
+    message(
+      paste0(
+        "Note: studies '",
+        paste(sd0.studies, collapse = ", "),
+        "' have exactly 0 estimated standard error ",
+        "for the combined marker gamma. ",
+        "These studies will NOT be included in the meta-analysis."
+      )
+    )
+  }
+  
   evaluation.metrics.study = evaluation.metrics.study %>%
-    mutate(p.adjusted = p.adjust(p.unadjusted, method = p.correction))
+    mutate(p.adjusted = p.adjust(p.unadjusted, method = p.correction)) %>% 
+    filter(sd != 0)
   
   # Now do meta-analysis on these results
   # Extract the values of delta
