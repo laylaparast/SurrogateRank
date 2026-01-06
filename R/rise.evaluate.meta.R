@@ -310,8 +310,8 @@ rise.evaluate.meta = function(yone,
   
   # Call the restricted maximum likelihood random-effects meta-analysis function
   delta.reml.marker = delta.reml.meta(
-    delta.marker,
-    sd.delta.marker,
+    delta = delta.marker,
+    sd.delta = sd.delta.marker,
     epsilon = epsilon.meta,
     alpha = alpha,
     alternative = alternative

@@ -3,7 +3,9 @@
 #' @param delta numeric vector of delta values per study
 #' @param sd.delta numeric vector of standard error of delta values per study
 #' @param epsilon numeric non-inferiority margin for testing cross-study validity
-#' @param alpha numeric significance level of test
+#' @param alpha numeric significance level of test. Note : using the two-one-sided test (\code{alternative = "two.sided"})
+#'   produces a (1-2\code{alpha})*100% confidence interval, so you may consider halving your 
+#'   desired \code{alpha} if using this option.
 #' @param alternative character giving the alternative hypothesis type for testing the summary effect.
 #'   One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
@@ -15,8 +17,12 @@
 #'   \item \code{tau2} : numeric, estimated tau-squared (between-study heterogeneity)
 #'   \item \code{mu.delta} : numeric, estimated mean of distribution of delta
 #'   \item \code{se.delta} : numeric, standard error of delta summary estimate with Hartung-Knapp adjustment
-#'   \item \code{ci.delta.upper} : numeric, upper (1-alpha)*100% confidence interval for mean of delta
-#'   \item \code{ci.delta.lower} : numeric, lower (1-alpha)*100% confidence interval for mean of delta
+#'   \item \code{ci.delta.upper} : numeric, upper confidence interval for mean of delta. 
+#'          Note : if using the non-inferiority test (i.e. \code{alternative = "less"}), 
+#'          these bounds correspond to a (1-\code{alpha})*100% confidence interval,
+#'          whereas the two-one-sided test (i.e. \code{alternative = "two.sided"})
+#'          corresponds to a (1-2\code{alpha})*100% interval.
+#'   \item \code{ci.delta.lower} : numeric, lower confidence interval for mean of delta
 #'   \item \code{p.lower} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
 #'   testing the null hypothesis that \code{delta} is greater than \code{-epsilon}.
 #'   Value is \code{NULL} if \code{alternative} is \code{"less"}.
@@ -162,7 +168,7 @@ delta.reml.meta <- function(delta = NULL,
   se.HK <- sqrt(q) * sqrt(var.conv)
   
   # HK CI (uses t_{n.studies-1})
-  tcrit <- qt(1 - alpha / 2, df = n.studies - 1)
+  tcrit <- qt(1 - alpha, df = n.studies - 1)
   ci.HK <- c(mu.delta.hat - tcrit * se.HK, mu.delta.hat + tcrit * se.HK)
   
   # -------------------------
