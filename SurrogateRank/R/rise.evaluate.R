@@ -240,7 +240,7 @@ rise.evaluate <- function(yone,
       geom_point(size = 5) +
       xlab("Primary Response (rank)") +
       ylab(expression(gamma[S] ~ "(rank)")) +
-      ggtitle("Ranks of primary response vs new surrogate in evaluation data") +
+      ggtitle("Ranks of primary response vs \n new surrogate in evaluation data") +
       guides(col = guide_legend(title = "Treatment")) +
       scale_color_manual(
         labels = levels(as.factor(treatment)),
@@ -261,7 +261,7 @@ rise.evaluate <- function(yone,
         hjust = -0.1,       # nudge inside the panel
         vjust = 1.1,        # nudge inside the panel
         color = "red",
-        size = 15
+        size = 4
       ) +
       theme_minimal(base_size = 22) +
       theme(

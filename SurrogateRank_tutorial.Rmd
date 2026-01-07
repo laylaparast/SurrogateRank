@@ -7,12 +7,16 @@ editor_options:
 ---
 
 ```{r global_options, echo=FALSE}
-knitr::opts_chunk$set(fig.width=13, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
+knitr::opts_chunk$set(warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
 ```
 
-In this tutorial, we will go through examples using the functions in the **SurrogateRank** package. First, install the package from CRAN and load it.
+In this tutorial, we will go through examples using the functions in the **SurrogateRank** package. First, install the package from CRAN or Github and load it.
 
 ```{r results = "hide", message=FALSE}
+#from Github
+#library(devtools)
+#install_github("laylaparast/SurrogateRank")
+#from CRAN
 #install.packages("SurrogateRank")
 library(SurrogateRank)
 
