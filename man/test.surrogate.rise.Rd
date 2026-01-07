@@ -97,8 +97,8 @@ weights for significant markers screened. If \code{TRUE}, weights for all marker
 that, if normalised weights are required, these will only be returned for significant markers, and raw
 weights will be returned in a second column.}
 
-\item{weight.mode}{character giving the type of weighting to return. One of
-\code{c("inverse.delta","diff.epsilon", or "none")}. The default is \code{"inverse.delta"}, which means
+\item{weight.mode}{character giving the type of weighting to return. One of \code{c("inverse.delta",}
+\code{"diff.epsilon", or "none")}. The default is \code{"inverse.delta"}, which means
 the weights are determined by taking the inverse of the absolute values of delta. If delta is exactly 0,
 this is uncomputable and the weight defaults to the inverse of the next closest absolute delta value. If
 delta is very close to 0, these estimates can be unstable and extreme. The \code{"diff.epsilon"} option

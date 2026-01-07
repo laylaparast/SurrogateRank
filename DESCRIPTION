@@ -1,7 +1,7 @@
 Package: SurrogateRank
 Type: Package
 Title: Rank-Based Test to Evaluate a Surrogate Marker
-Version: 2.1
+Version: 2.2
 Authors@R: c(person("Layla", "Parast", role = c("aut", "cre"), email = "parast@austin.utexas.edu"), person("Arthur", "Hughes", role = c("aut"), email = "arthur.hughes@u-bordeaux.fr"))
 Description: Uses a novel rank-based nonparametric approach to evaluate a surrogate marker
   in a small sample size setting. Details are described in Parast et al (2024)
@@ -13,9 +13,4 @@ Description: Uses a novel rank-based nonparametric approach to evaluate a surrog
 License: GPL
 Encoding: UTF-8
 Imports: stats,dplyr,ggplot2,pbmcapply
-Suggests: 
-    roxygen2
-Roxygen:
-    list(markdown = TRUE)
-RoxygenNote: 7.3.3
-Config/testthat/edition: 3
+

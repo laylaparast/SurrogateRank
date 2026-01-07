@@ -190,8 +190,9 @@ rise.screen <- function(yone,
     szero = yzero
   )$u.y
   
+  u.s = u.y - results$delta
   results$u.y = u.y
-  results$u.s = u.y - results$delta
+  results$u.s = u.s
   results$n = length(yone) + length(yzero)
   
   results = results %>% 
