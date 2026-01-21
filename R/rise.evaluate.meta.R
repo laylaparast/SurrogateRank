@@ -460,7 +460,7 @@ rise.evaluate.meta = function(yone,
     
     # Plot parameters
     base.text.size <- 14
-    y.min <- -1
+    y.min <- if (show.pooled.effect) -1 else 0
     y.max <- k + 1
     rel.w.left  <- 0.45
     rel.w.mid   <- 1.10

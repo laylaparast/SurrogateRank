@@ -28,7 +28,8 @@ rise.screen.meta(
   normalise.weights = TRUE,
   return.forest.plot = TRUE,
   return.fit.plot = TRUE,
-  show.pooled.effect = TRUE
+  show.pooled.effect = TRUE,
+  return.study.similarity.plot = TRUE
 )
 }
 \arguments{
@@ -110,6 +111,9 @@ versus the effects on the combined surrogate signature for each study will be in
 
 \item{show.pooled.effect}{logical flag. If \code{TRUE} (default), the forest plot will show the pooled effect
 estimate. Otherwise, it will just show the individual trial estimates.}
+
+\item{return.study.similarity.plot}{logical flag. If \code{TRUE} (default), will return two plots showing the similarity
+between study-wise marker signatures (i.e., the application of RISE to each study individually, with p-value correction within-study).}
 }
 \value{
 a list with elements \itemize{
@@ -123,8 +127,8 @@ estimate of tau-squared \code{tau2}, Cochran's Q-statistic and Higgins-Thompson 
 unadjusted and adjusted meta-analysis p-values, and standardised weights.
 \item \code{significant.markers}: character vector of markers with meta-analysis p-values \code{< alpha}
 \item \code{screening.weights}: dataframe giving marker names and the standardised meta-analysis weights
-\item \code{gamma.s.plot}: if \code{return.forest.plot} and/or \code{return.fit.plot} are \code{TRUE},
-returns fitted evaluation plots on training data as a list
+\item \code{gamma.s.plot}: if \code{return.forest.plot}, \code{return.fit.plot}, and/or  \code{return.study.similarity.plot}
+are \code{TRUE}, returns fitted evaluation plots on training data as a list.
 }
 }
 \description{

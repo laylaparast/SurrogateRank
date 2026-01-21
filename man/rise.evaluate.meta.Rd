@@ -28,7 +28,8 @@ rise.evaluate.meta(
   markers = NULL,
   return.all.evaluate = FALSE,
   return.forest.plot = TRUE,
-  return.fit.plot = TRUE
+  return.fit.plot = TRUE,
+  show.pooled.effect = TRUE
 )
 }
 \arguments{
@@ -108,6 +109,9 @@ combined signature across studies, with its meta-analysis summary measure, will 
 
 \item{return.fit.plot}{logical flag. If \code{TRUE} (default), a plot of the effects on the primary response
 versus the effects on the combined surrogate signature for each study will be included in the output.}
+
+\item{show.pooled.effect}{logical flag. If \code{TRUE} (default), the forest plot will show the pooled effect
+estimate. Otherwise, it will just show the individual trial estimates.}
 }
 \value{
 a list with elements \itemize{

@@ -62,6 +62,8 @@
 #' versus the effects on the combined surrogate signature for each study will be included in the output.
 #' @param show.pooled.effect logical flag. If \code{TRUE} (default), the forest plot will show the pooled effect
 #' estimate. Otherwise, it will just show the individual trial estimates.
+#' @param return.study.similarity.plot logical flag. If \code{TRUE} (default), will return two plots showing the similarity
+#' between study-wise marker signatures (i.e., the application of RISE to each study individually, with p-value correction within-study).
 #'
 #' @return a list with elements \itemize{
 #'   \item \code{screening.metrics.study} : dataframe of per-study results from RISE screening.
@@ -74,11 +76,11 @@
 #'   unadjusted and adjusted meta-analysis p-values, and standardised weights.
 #'   \item \code{significant.markers}: character vector of markers with meta-analysis p-values \code{< alpha}
 #'   \item \code{screening.weights}: dataframe giving marker names and the standardised meta-analysis weights
-#'   \item \code{gamma.s.plot}: if \code{return.forest.plot} and/or \code{return.fit.plot} are \code{TRUE},
-#'   returns fitted evaluation plots on training data as a list
+#'   \item \code{gamma.s.plot}: if \code{return.forest.plot}, \code{return.fit.plot}, and/or  \code{return.study.similarity.plot}
+#'   are \code{TRUE}, returns fitted evaluation plots on training data as a list.
 #' }
 #'
-#' @import dplyr pbmcapply ggplot2 cowplot
+#' @import dplyr pbmcapply ggplot2 cowplot ggVennDiagram ComplexUpset tidyr
 #' @export
 #' @author Arthur Hughes
 #'
@@ -114,7 +116,8 @@ rise.screen.meta = function(yone,
                             normalise.weights = TRUE,
                             return.forest.plot = TRUE,
                             return.fit.plot = TRUE,
-                            show.pooled.effect = TRUE) {
+                            show.pooled.effect = TRUE,
+                            return.study.similarity.plot = TRUE) {
   # DATA FORMATTING #
   ## Convert dataframes to numeric matrices
   if (is.data.frame(sone) | is.data.frame(szero)) {
@@ -227,7 +230,7 @@ rise.screen.meta = function(yone,
     # Extract relevant screening results
     rise.screen.results.allstudies[[ix]] <- screen.results.study[["screening.metrics"]] %>%
       mutate(study = study) %>%
-      dplyr::select(study, marker, n, delta, sd)
+      dplyr::select(study, marker, n, delta, sd, p_unadjusted, p_adjusted)
     
     # Increase index
     ix <- ix + 1L
@@ -236,6 +239,54 @@ rise.screen.meta = function(yone,
   
   # Bind the per-study results into a dataframe
   rise.screen.results.allstudies.df <- bind_rows(rise.screen.results.allstudies)
+  
+  if(return.study.similarity.plot) {
+    sig_list <- rise.screen.results.allstudies.df %>%
+      filter(p_adjusted < alpha) %>%
+      group_by(study, n) %>%
+      summarise(markers = list(unique(marker)), .groups = "drop") %>%
+      mutate(study_label = paste0(study, " (N = ", n, ")")) %>%
+      {
+        setNames(.$markers, .$study_label)
+      }  # named list for ggVennDiagram
+    
+    # Plot Venn diagram
+    venn.plot <- suppressWarnings(
+      ggVennDiagram(sig_list) +
+        scale_fill_gradient(low = "white", high = "steelblue") +
+        theme(
+          legend.position = "none",
+          plot.margin = margin(10, 10, 10, 10)
+        ) +
+        coord_cartesian(clip = "off") +
+        theme(text = element_text(size = 10))
+    )
+    
+    # Prepare data frame for ComplexUpset
+    upset_df <- sig_list %>%
+      # Convert named list to long format
+      enframe(name = "study", value = "marker") %>%
+      unnest(marker) %>%
+      mutate(present = TRUE) %>%
+      pivot_wider(
+        names_from = study,
+        values_from = present,
+        values_fill = FALSE
+      )
+    
+    # Create the UpSet plot
+    upset.plot = upset(
+      upset_df,
+      colnames(upset_df)[-1],
+      # exclude the 'marker' column
+      name = "Markers",
+      base_annotations = list('Intersection size' = intersection_size(counts =
+                                                                        TRUE))
+    )
+    
+    similarity.plots = list("venn.plot" = venn.plot, "upset.plot" = upset.plot)
+    
+  }
   
   # Get names of all markers screened
   all.markers = rise.screen.results.allstudies.df %>%
@@ -328,13 +379,18 @@ rise.screen.meta = function(yone,
       "No significant markers found in meta-analysis.
           You could try to relax your significant criteria."
     )
+    
+    gamma.s.plot <- list(
+      "similarity.plots" = if (return.study.similarity.plot) {similarity.plots} else {NULL}
+    )
+    
     return(
       list(
         "screening.metrics.study" = rise.screen.results.allstudies.df,
         "screening.metrics.meta" = delta.reml.df,
         "significant.markers" = NULL,
         "screening.weights" = NULL,
-        "gamma.s.plot" = NULL
+        "gamma.s.plot" = gamma.s.plot
       )
     )
   }
@@ -600,7 +656,7 @@ rise.screen.meta = function(yone,
     
     # Plot parameters
     base.text.size <- 14
-    y.min <- -1
+    y.min <- if (show.pooled.effect) -1 else 0
     y.max <- k + 1
     rel.w.left  <- 0.45
     rel.w.mid   <- 1.10
@@ -828,6 +884,15 @@ rise.screen.meta = function(yone,
     forest.plot = NULL
   }
   
+  if(return.forest.plot){
+    
+  }
+  
+  gamma.s.plot <- list(
+    "fit.plot" = if (return.fit.plot) {fit.plot} else {NULL},
+    "forest.plot" = if (return.forest.plot) {forest.plot} else {NULL},
+    "similarity.plots" = if (return.study.similarity.plot) {similarity.plots} else {NULL}
+  )
   
   return(
     list(
@@ -835,7 +900,7 @@ rise.screen.meta = function(yone,
       "screening.metrics.meta" = delta.reml.df,
       "significant.markers" = significant.markers,
       "screening.weights" = weights.significant,
-      "gamma.s.plot" = list("fit.plot" = fit.plot, "forest.plot" = forest.plot)
+      "gamma.s.plot" = gamma.s.plot
     )
   )
   
