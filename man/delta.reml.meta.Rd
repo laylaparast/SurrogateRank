@@ -10,6 +10,7 @@ delta.reml.meta(
   epsilon = NULL,
   alpha = 0.05,
   alternative = "two.sided",
+  sample.sizes = NULL,
   tol = 1e-10,
   verbose = FALSE
 )
@@ -21,11 +22,19 @@ delta.reml.meta(
 
 \item{epsilon}{numeric non-inferiority margin for testing cross-study validity}
 
-\item{alpha}{numeric significance level of test}
+\item{alpha}{numeric significance level of test. Note : using the two-one-sided test (\code{alternative = "two.sided"})
+produces a (1-2\code{alpha})*100\% confidence interval, so you may consider halving your
+desired \code{alpha} if using this option.}
 
 \item{alternative}{character giving the alternative hypothesis type for testing the summary effect.
 One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 corresponds to a two one-sided test procedure. Default is "two.sided".}
+
+\item{sample.sizes}{numeric vector of sample sizes (note: individuals, not observations). These should be
+provided in case the estimated standard error for a given study is exactly 0. In order to compute
+estimates of cochrane's Q and I-squared, a conservative bound for the variance is used. This bound
+is rooted in U-statistic theory and is taken by ignoring the covariance term when estmating the variance
+for delta.}
 
 \item{tol}{numeric convergence tolerance for finding a root of the score equation}
 
@@ -37,8 +46,12 @@ a list with elements \itemize{
 \item \code{tau2} : numeric, estimated tau-squared (between-study heterogeneity)
 \item \code{mu.delta} : numeric, estimated mean of distribution of delta
 \item \code{se.delta} : numeric, standard error of delta summary estimate with Hartung-Knapp adjustment
-\item \code{ci.delta.upper} : numeric, upper (1-alpha)*100\% confidence interval for mean of delta
-\item \code{ci.delta.lower} : numeric, lower (1-alpha)*100\% confidence interval for mean of delta
+\item \code{ci.delta.upper} : numeric, upper confidence interval for mean of delta.
+Note : if using the non-inferiority test (i.e. \code{alternative = "less"}),
+these bounds correspond to a (1-\code{alpha})*100\% confidence interval,
+whereas the two-one-sided test (i.e. \code{alternative = "two.sided"})
+corresponds to a (1-2\code{alpha})*100\% interval.
+\item \code{ci.delta.lower} : numeric, lower confidence interval for mean of delta
 \item \code{p.lower} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
 testing the null hypothesis that \code{delta} is greater than \code{-epsilon}.
 Value is \code{NULL} if \code{alternative} is \code{"less"}.

@@ -55,6 +55,8 @@
 #' combined signature across studies, with its meta-analysis summary measure, will be included in the output.
 #' @param return.fit.plot logical flag. If \code{TRUE} (default), a plot of the effects on the primary response
 #' versus the effects on the combined surrogate signature for each study will be included in the output.
+#' @param show.pooled.effect logical flag. If \code{TRUE} (default), the forest plot will show the pooled effect
+#' estimate. Otherwise, it will just show the individual trial estimates.
 #'
 #' @return a list with elements \itemize{
 #'   \item \code{individual.metrics} : if \code{return.all.evaluate}=\code{TRUE}, a list containing
@@ -106,7 +108,8 @@ rise.evaluate.meta = function(yone,
                               markers = NULL,
                               return.all.evaluate = FALSE,
                               return.forest.plot = TRUE,
-                              return.fit.plot = TRUE) {
+                              return.fit.plot = TRUE,
+                              show.pooled.effect = TRUE) {
   # DATA FORMATTING #
   ## Convert dataframes to numeric matrices
   if (is.data.frame(sone) | is.data.frame(szero)) {
@@ -276,7 +279,8 @@ rise.evaluate.meta = function(yone,
   names(gamma.s) = all.study.names
   
   # Bind the per-study results into a dataframe
-  evaluation.metrics.study <- bind_rows(rise.evaluate.results.allstudies)
+  evaluation.metrics.study <- bind_rows(rise.evaluate.results.allstudies) %>%
+    mutate(p.adjusted = p.adjust(p.unadjusted, method = p.correction))
   
   # If some studies have exactly 0 standard error, report this
   if (any(evaluation.metrics.study$sd == 0)) {
@@ -290,14 +294,10 @@ rise.evaluate.meta = function(yone,
         paste(sd0.studies, collapse = ", "),
         "' have exactly 0 estimated standard error ",
         "for the combined marker gamma. ",
-        "These studies will NOT be included in the meta-analysis."
+        "This variance will be corrected for the purposes of computing I-squared values."
       )
     )
   }
-  
-  evaluation.metrics.study = evaluation.metrics.study %>%
-    mutate(p.adjusted = p.adjust(p.unadjusted, method = p.correction)) %>% 
-    filter(sd != 0)
   
   # Now do meta-analysis on these results
   # Extract the values of delta
@@ -308,13 +308,18 @@ rise.evaluate.meta = function(yone,
   sd.delta.marker = evaluation.metrics.study %>%
     pull(sd)
   
+  sample.sizes.marker = evaluation.metrics.study %>% 
+    mutate(n.indiv = ifelse(study %in% paired.studies, n/2, n)) %>% 
+    pull(n.indiv)
+  
   # Call the restricted maximum likelihood random-effects meta-analysis function
   delta.reml.marker = delta.reml.meta(
     delta = delta.marker,
     sd.delta = sd.delta.marker,
     epsilon = epsilon.meta,
     alpha = alpha,
-    alternative = alternative
+    alternative = alternative,
+    sample.sizes = sample.sizes.marker
   )[["results"]]
   
   # Save the study weights in one of the results dataframes
@@ -382,8 +387,7 @@ rise.evaluate.meta = function(yone,
   # If forest plot desired, return it
   if (return.forest.plot) {
     # Extract results for all studies with positive standard error
-    evaluation.metrics.study.temp = evaluation.metrics.study %>%
-      filter(sd != 0)
+    evaluation.metrics.study.temp = evaluation.metrics.study
     
     df.gamma.temp = evaluation.metrics.meta %>%
       mutate(
@@ -403,7 +407,11 @@ rise.evaluate.meta = function(yone,
       ) %>%
       select(all_of(colnames(evaluation.metrics.study.temp)))
     
-    evaluation.metrics.study2 = bind_rows(evaluation.metrics.study.temp, df.gamma.temp)
+    if (show.pooled.effect) {
+      evaluation.metrics.study2 = bind_rows(evaluation.metrics.study.temp, df.gamma.temp)
+    } else {
+      evaluation.metrics.study2 = evaluation.metrics.study.temp
+    }
     
     I2 = evaluation.metrics.meta$I2
     
@@ -522,9 +530,14 @@ rise.evaluate.meta = function(yone,
         xlim = c(x.min, x.max),
         clip = "off"
       ) +
-      labs(x = expression(delta),
-           y = NULL,
-           title = "Random-effects meta-analysis of combined marker in evaluation data") +
+      labs(
+        x = expression(delta),
+        y = NULL,
+        title = if (show.pooled.effect)
+          "Random-effects meta-analysis of combined marker in evaluation data"
+        else
+          "Effect sizes of combined marker across studies in evaluation data"
+      ) +
       theme_minimal(base_size = base.text.size) +
       theme(
         plot.title = element_text(
@@ -544,11 +557,9 @@ rise.evaluate.meta = function(yone,
         color = "red",
         linewidth = 0.7
       ) +
-      geom_vline(
-        xintercept = 0,
-        linetype = "solid",
-        color = "grey60"
-      )
+      geom_vline(xintercept = 0,
+                 linetype = "solid",
+                 color = "grey60")
     
     # Right panel: p.unadjusted-value / weight / N
     right.df <- plot.df %>%
@@ -558,52 +569,89 @@ rise.evaluate.meta = function(yone,
         display.n   = label.n
       )
     
-    right.table <- ggplot(right.df, aes(y = y)) +
-      annotate(
-        "text",
-        x = 1,
-        y = k + 0.9,
-        label = "p-value",
-        fontface = "bold",
-        hjust = 0,
-        size = 5
-      ) +
-      annotate(
-        "text",
-        x = 2.1,
-        y = k + 0.9,
-        label = "Weight",
-        fontface = "bold",
-        hjust = 0,
-        size = 5
-      ) +
-      annotate(
-        "text",
-        x = 3.3,
-        y = k + 0.9,
-        label = "N",
-        fontface = "bold",
-        hjust = 0,
-        size = 5
-      ) +
-      geom_text(aes(x = 1, label = display.pval),
-                hjust = 0,
-                size = 4.5) +
-      geom_text(aes(x = 2.1, label = display.wgt),
-                hjust = 0,
-                size = 4.5) +
-      geom_text(aes(x = 3.3, label = display.n),
-                hjust = 0,
-                size = 4.5) +
-      scale_y_continuous(
-        breaks = right.df$y,
-        limits = c(y.min, y.max),
-        expand = c(0, 0)
-      ) +
-      scale_x_continuous(limits = c(0.9, 4.0), expand = c(0, 0)) +
-      coord_cartesian(clip = "off") +
-      theme_void() +
-      theme(plot.margin = unit(c(1.2, 1.2, 1, 0.6), "lines"))
+    if (show.pooled.effect) {
+      right.table <- ggplot(right.df, aes(y = y)) +
+        annotate(
+          "text",
+          x = 1,
+          y = k + 0.9,
+          label = "p-value",
+          fontface = "bold",
+          hjust = 0,
+          size = 5
+        ) +
+        annotate(
+          "text",
+          x = 2.1,
+          y = k + 0.9,
+          label = "Weight",
+          fontface = "bold",
+          hjust = 0,
+          size = 5
+        ) +
+        annotate(
+          "text",
+          x = 3.3,
+          y = k + 0.9,
+          label = "N",
+          fontface = "bold",
+          hjust = 0,
+          size = 5
+        ) +
+        geom_text(aes(x = 1, label = display.pval),
+                  hjust = 0,
+                  size = 4.5) +
+        geom_text(aes(x = 2.1, label = display.wgt),
+                  hjust = 0,
+                  size = 4.5) +
+        geom_text(aes(x = 3.3, label = display.n),
+                  hjust = 0,
+                  size = 4.5) +
+        scale_y_continuous(
+          breaks = right.df$y,
+          limits = c(y.min, y.max),
+          expand = c(0, 0)
+        ) +
+        scale_x_continuous(limits = c(0.9, 4.0), expand = c(0, 0)) +
+        coord_cartesian(clip = "off") +
+        theme_void() +
+        theme(plot.margin = unit(c(1.2, 1.2, 1, 0.6), "lines"))
+    } else {
+      right.table <- ggplot(right.df, aes(y = y)) +
+        annotate(
+          "text",
+          x = 1,
+          y = k + 0.9,
+          label = "p-value",
+          fontface = "bold",
+          hjust = 0,
+          size = 5
+        ) +
+        annotate(
+          "text",
+          x = 2.2,
+          y = k + 0.9,
+          label = "N",
+          fontface = "bold",
+          hjust = 0,
+          size = 5
+        ) +
+        geom_text(aes(x = 1, label = display.pval),
+                  hjust = 0,
+                  size = 4.5) +
+        geom_text(aes(x = 2.2, label = display.n),
+                  hjust = 0,
+                  size = 4.5) +
+        scale_y_continuous(
+          breaks = right.df$y,
+          limits = c(y.min, y.max),
+          expand = c(0, 0)
+        ) +
+        scale_x_continuous(limits = c(0.9, 2.8), expand = c(0, 0)) +
+        coord_cartesian(clip = "off") +
+        theme_void() +
+        theme(plot.margin = unit(c(1.2, 1.2, 1, 0.6), "lines"))
+    }
     
     # Combine panels and add bottom info row
     combined <- plot_grid(
@@ -624,12 +672,15 @@ rise.evaluate.meta = function(yone,
       size = base.text.size + 2
     )
     
-    forest.plot <- plot_grid(combined,
-                             info.grob,
-                             ncol = 1,
-                             rel_heights = c(0.95, 0.05))
-    
-  }
+    if (show.pooled.effect) {
+      forest.plot <- plot_grid(combined,
+                               info.grob,
+                               ncol = 1,
+                               rel_heights = c(0.95, 0.05))
+    } else {
+      forest.plot <- combined
+    }
+  } 
   
   if (return.all.evaluate) {
     rise.screen.results = rise.screen.meta(

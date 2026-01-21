@@ -9,6 +9,11 @@
 #' @param alternative character giving the alternative hypothesis type for testing the summary effect.
 #'   One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
+#' @param sample.sizes numeric vector of sample sizes (note: individuals, not observations). These should be 
+#'   provided in case the estimated standard error for a given study is exactly 0. In order to compute 
+#'   estimates of cochrane's Q and I-squared, a conservative bound for the variance is used. This bound
+#'   is rooted in U-statistic theory and is taken by ignoring the covariance term when estmating the variance 
+#'   for delta. 
 #' @param tol numeric convergence tolerance for finding a root of the score equation
 #' @param verbose logical flag indicating whether messages should be printed, defaults to \code{FALSE}
 #'
@@ -47,6 +52,7 @@ delta.reml.meta <- function(delta = NULL,
                             epsilon = NULL,
                             alpha = 0.05,
                             alternative = "two.sided",
+                            sample.sizes = NULL,
                             tol = 1e-10,
                             verbose = FALSE) {
   # Validity checks
@@ -60,17 +66,17 @@ delta.reml.meta <- function(delta = NULL,
     stop("epsilon (equivalence margin) must be supplied")
   }
   
-  # Remove values with exactly 0 standard deviation
-  if (any(sd.delta == 0)) {
-    delta = delta[-which(sd.delta == 0)]
-    sd.delta = sd.delta[-which(sd.delta == 0)]
-    if (verbose) {
-      message(
-        "Note : one or multiple studies have exactly 0 estimated standard error.
-              Removing this study from the analysis."
-      )
-    }
-  }
+  # # Remove values with exactly 0 standard deviation
+  # if (any(sd.delta == 0)) {
+  #   delta = delta[-which(sd.delta == 0)]
+  #   sd.delta = sd.delta[-which(sd.delta == 0)]
+  #   if (verbose) {
+  #     message(
+  #       "Note : one or multiple studies have exactly 0 estimated standard error.
+  #             Removing this study from the analysis."
+  #     )
+  #   }
+  # }
   
   # Reset the value of n.studies
   n.studies = length(delta)
@@ -192,6 +198,17 @@ delta.reml.meta <- function(delta = NULL,
   # Cochran's Q and I^2
   # -------------------------
   # Fixed-effect weights use vi only
+  
+  # In the case where variance exactly 0, replace this with a conservative estimate based on asymptotic U-statistic theory
+  # when ignoring the covariance term
+  # The variance of U-statistics is derived in the RISE paper
+  
+  if (any(vi == 0)){
+    variance.bound = 1/(2*sample.sizes)
+    
+    vi[vi == 0] = variance.bound[vi == 0]
+  }
+  
   w0 <- 1 / vi
   w0.sum <- sum(w0)
   delta.FE <- sum(w0 * delta) / w0.sum
