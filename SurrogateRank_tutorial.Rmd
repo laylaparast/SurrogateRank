@@ -43,7 +43,7 @@ Now, we calculate the metric $\delta$ which measures the strength of the surroga
 delta.calculate(yone = example.data$y1, yzero = example.data$y0, sone = example.data$s1, szero = example.data$s0)
 ```
 
-Next, we formally test this **delta** using **test.surrogate**. The required arguments for this function are the same as **delta.calculate** In addition to the same returned quantities as **delta.calculate**, this function also returns the 1-sided confidence interval for **delta**, the epsilon that is used for the surrogacy test, and an indication of whether the provided surrogate is a valid surrogate based on this testing approach. For example, with this dataset, **is.surrogate** is **TRUE** meaning we can conclude this surrogate is valid.
+Next, we formally test this **delta** using **test.surrogate**. The required arguments for this function are the same as **delta.calculate**. In addition to the same returned quantities as **delta.calculate**, this function also returns the 1-sided confidence interval for **delta**, the epsilon that is used for the surrogacy test, and an indication of whether the provided surrogate is a valid surrogate based on this testing approach. For example, with this dataset, **is.surrogate** is **TRUE** meaning we can conclude this surrogate is valid.
 
 ```{r}
 test.surrogate(yone = example.data$y1, yzero = example.data$y0, sone = example.data$s1, szero = example.data$s0)
