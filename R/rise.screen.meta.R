@@ -240,7 +240,7 @@ rise.screen.meta = function(yone,
   # Bind the per-study results into a dataframe
   rise.screen.results.allstudies.df <- bind_rows(rise.screen.results.allstudies)
   
-  if(return.study.similarity.plot) {
+  if (return.study.similarity.plot) {
     sig_list <- rise.screen.results.allstudies.df %>%
       filter(p_adjusted < alpha) %>%
       group_by(study, n) %>%
@@ -380,9 +380,11 @@ rise.screen.meta = function(yone,
           You could try to relax your significant criteria."
     )
     
-    gamma.s.plot <- list(
-      "similarity.plots" = if (return.study.similarity.plot) {similarity.plots} else {NULL}
-    )
+    gamma.s.plot <- list("similarity.plots" = if (return.study.similarity.plot) {
+      similarity.plots
+    } else {
+      NULL
+    })
     
     return(
       list(
@@ -553,17 +555,44 @@ rise.screen.meta = function(yone,
   # This plot shows the effect estimates for each study, with size proportional to sample size
   if (return.fit.plot) {
     # Set a minimum value for the axes
-    plot.min.global = gamma.results.allstudies.df %>%
+    plot.min.global <- gamma.results.allstudies.df %>%
       dplyr::select(u.y, u.s) %>%
       min() - 0.1
     
-    # Plot
-    fit.plot = gamma.results.allstudies.df %>%
+    # Compute CCC
+    x <- gamma.results.allstudies.df$u.y
+    y <- gamma.results.allstudies.df$u.s
+    ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
+    
+    # Prepare legend sizing
+    n_vals <- gamma.results.allstudies.df$n
+    round_down_10 <- function(x)
+      floor(x / 10) * 10
+    round_up_10   <- function(x)
+      ceiling(x / 10) * 10
+    round_up_50   <- function(x)
+      ceiling(x / 50) * 50
+    
+    min_label <- round_down_10(min(n_vals))
+    max_label <- round_up_10(max(n_vals))
+    mid_label <- round_up_50(median(n_vals))
+    
+    legend_breaks <- c(min(n_vals), mid_label, max(n_vals))
+    legend_labels <- c(as.character(min_label),
+                       as.character(mid_label),
+                       as.character(max_label))
+    
+    # Plot with CCC annotation and improved sizing
+    # Plot with smallest n always visible (size_min = 5)
+    fit.plot <- gamma.results.allstudies.df %>%
       ggplot(aes(x = u.y, y = u.s)) +
-      geom_point(aes(size = n),
-                 shape = 21,
-                 alpha = 0.5,
-                 stroke = 0.6) +
+      geom_point(
+        aes(size = n),
+        shape = 21,
+        alpha = 0.5,
+        stroke = 1,
+        fill = "#6FB1EF"
+      ) +
       geom_abline(
         slope = 1,
         intercept = 0,
@@ -572,7 +601,24 @@ rise.screen.meta = function(yone,
         linewidth = 0.8,
         alpha = 0.5
       ) +
-      # use the same scale across all panels
+      # Annotate CCC in top-left
+      annotate(
+        "text",
+        x = plot.min.global,
+        y = 0.95,
+        label = paste0("CCC = ", round(ccc, 2)),
+        hjust = 0,
+        vjust = 1,
+        color = "red",
+        size = 12
+      ) +
+      # Scale sizes relative to the smallest n
+      scale_size_continuous(
+        range = c(5, 20),
+        # smallest n = size 5, largest = 14
+        breaks = legend_breaks,
+        labels = legend_labels
+      ) +
       scale_x_continuous(limits = c(plot.min.global, 1.01),
                          expand = c(0, 0)) +
       scale_y_continuous(limits = c(plot.min.global, 1.01),
@@ -615,6 +661,11 @@ rise.screen.meta = function(yone,
     I2 = delta.reml.gamma$I2
     tau2 = delta.reml.gamma$tau2
     
+    # Compute CCC
+    x <- gamma.results.allstudies.df$u.y
+    y <- gamma.results.allstudies.df$u.s
+    ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
+    
     # Separate studies vs summary
     studies.df <- gamma.results.allstudies.df2 %>% filter(study != "Pooled effect")
     summary.row <- gamma.results.allstudies.df2 %>% filter(study == "Pooled effect")
@@ -653,10 +704,16 @@ rise.screen.meta = function(yone,
     I2.txt   <- formatC(delta.reml.gamma$I2,
                         digits = 1,
                         format = "f")
+    ccc.txt = formatC(ccc,
+                      digits = 2,
+                      format = "f")
     
     # Plot parameters
     base.text.size <- 14
-    y.min <- if (show.pooled.effect) -1 else 0
+    y.min <- if (show.pooled.effect)
+      - 1
+    else
+      0
     y.max <- k + 1
     rel.w.left  <- 0.45
     rel.w.mid   <- 1.10
@@ -862,7 +919,7 @@ rise.screen.meta = function(yone,
       align = "h"
     )
     
-    info.text <- paste0("Tau-squared = ", tau2.txt, "   |   I-Squared = ", I2.txt, "%   |   k = ", k)
+    info.text <- paste0("Tau-squared = ", tau2.txt, "   |   I-Squared = ", I2.txt, "%   |  Lin's CCC =  ", ccc.txt,"   |   k = ", k)
     info.grob <- ggdraw() + draw_label(
       info.text,
       x = 0.5,
@@ -884,14 +941,26 @@ rise.screen.meta = function(yone,
     forest.plot = NULL
   }
   
-  if(return.forest.plot){
+  if (return.forest.plot) {
     
   }
   
   gamma.s.plot <- list(
-    "fit.plot" = if (return.fit.plot) {fit.plot} else {NULL},
-    "forest.plot" = if (return.forest.plot) {forest.plot} else {NULL},
-    "similarity.plots" = if (return.study.similarity.plot) {similarity.plots} else {NULL}
+    "fit.plot" = if (return.fit.plot) {
+      fit.plot
+    } else {
+      NULL
+    },
+    "forest.plot" = if (return.forest.plot) {
+      forest.plot
+    } else {
+      NULL
+    },
+    "similarity.plots" = if (return.study.similarity.plot) {
+      similarity.plots
+    } else {
+      NULL
+    }
   )
   
   return(
