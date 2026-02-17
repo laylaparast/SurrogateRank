@@ -488,7 +488,9 @@ rise.evaluate.meta = function(yone,
           "",
           formatC(p.unadjusted, format = "f", digits = 3)
         ),
-        label.n = ifelse(is.na(n), "", as.character(n))
+        label.n = ifelse(is.na(n), "", as.character(n)),
+        ci_width = ci.upper - ci.lower,
+        summary_size = pmin(ci_width / 2, 6)
       )
     
     # Labels for weighting
@@ -569,8 +571,8 @@ rise.evaluate.meta = function(yone,
       ) +
       geom_point(
         data = filter(plot.df, is.summary),
+        size = 4,
         shape = 5,
-        size = 8,
         stroke = 1.2
       ) +
       scale_x_continuous(

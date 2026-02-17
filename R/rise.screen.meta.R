@@ -504,7 +504,7 @@ rise.screen.meta = function(yone,
         paste(sd0.studies, collapse = ", "),
         "' have exactly 0 estimated standard error ",
         "for the combined marker gamma. ",
-        "This variance will be corrected to a conservative value for the purposes of computing I-squared values."
+        "This variance will be corrected to a the smallest variance under the null (1/4n) for the weighting."
       )
     )
   }
@@ -764,8 +764,8 @@ rise.screen.meta = function(yone,
       ) +
       geom_point(
         data = filter(plot.df, is.summary),
+        size = 4,
         shape = 5,
-        size = 8,
         stroke = 1.2
       ) +
       scale_x_continuous(
