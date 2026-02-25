@@ -266,7 +266,7 @@ rise.screen.meta = function(yone,
     # Prepare data frame for ComplexUpset
     upset_df <- sig_list %>%
       # Convert named list to long format
-      enframe(name = "study", value = "marker") %>%
+      tibble::enframe(name = "study", value = "marker") %>%
       unnest(marker) %>%
       mutate(present = TRUE) %>%
       pivot_wider(

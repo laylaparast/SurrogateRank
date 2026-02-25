@@ -20,6 +20,7 @@
 #'                           with dimension \code{n0 x p} where n0 is the number of untreated
 #'                           samples and p the number of candidates. Sample ordering must match
 #'                           exactly \code{yzero}.
+#' @param alpha              significance level of test, default is \code{0.05}
 #' @param paired             logical flag giving if the data is independent or paired. If
 #'                           \code{FALSE} (default), samples are assumed independent. If
 #'                           \code{TRUE}, samples are assumed to be from a paired design. The

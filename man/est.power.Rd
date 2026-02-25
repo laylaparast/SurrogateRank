@@ -7,7 +7,7 @@
 	Calculates the estimated power to detect a valid surrogate given a total sample size and specified alternative
 }
 \usage{
-est.power(n.total, rho = 0.8, u.y.alt, delta.alt, power.want.s = 0.7)
+est.power(n.total, rho = 0.8, u.y.alt, delta.alt, power.want.s = 0.7, alpha = 0.05)
 }
 \arguments{
   \item{n.total}{
@@ -24,6 +24,9 @@ est.power(n.total, rho = 0.8, u.y.alt, delta.alt, power.want.s = 0.7)
 }
   \item{power.want.s}{
 	desired power for u.s, default is 0.7
+}
+\item{alpha}{
+	significance level, default is 0.05
 }
 }
 \value{

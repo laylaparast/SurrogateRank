@@ -8,7 +8,7 @@
 }
 \usage{
 test.surrogate(full.data = NULL, yone = NULL, yzero = NULL, sone = NULL, 
-szero = NULL, epsilon = NULL, power.want.s = 0.7, u.y.hyp = NULL)
+szero = NULL, epsilon = NULL, power.want.s = 0.7, u.y.hyp = NULL, alpha = 0.05)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -34,6 +34,9 @@ szero = NULL, epsilon = NULL, power.want.s = 0.7, u.y.hyp = NULL)
 }
   \item{u.y.hyp}{
 	hypothesized value of u.y used in the calculation of epsilon, default uses estimated valued of u.y
+}
+  \item{alpha}{
+	significance level, default is 0.05
 }
 }
 \value{

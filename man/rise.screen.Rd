@@ -83,6 +83,8 @@ When \code{"none"}, the weights are set to 1 for every marker.}
 
 \item{normalise.weights}{logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 all the weights such that the maximum weight is 1, which can help with interpretability.}
+
+\item{verbose}{logical flag. If \code{TRUE}, prints warning messages.}
 }
 \value{
 a list with elements \itemize{

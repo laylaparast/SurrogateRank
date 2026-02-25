@@ -54,6 +54,8 @@
 #' @param normalise.weights logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 #'   all the weights such that the maximum weight is 1, which can help with interpretability.
 #'   
+#' @param verbose logical flag. If \code{TRUE}, prints warning messages. 
+#'   
 #'
 #' @return a list with elements \itemize{
 #'   \item \code{screening.metrics} : dataframe of screening results (for each candidate marker - number of observations n,

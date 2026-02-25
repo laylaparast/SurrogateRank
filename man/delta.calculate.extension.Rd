@@ -4,7 +4,14 @@
 \alias{delta.calculate.extension}
 \title{Calculate Delta: Difference in Rank-based Statistics for Two Outcomes}
 \usage{
-delta.calculate.extension(yone, yzero, sone, szero, paired = FALSE)
+delta.calculate.extension(
+  yone,
+  yzero,
+  sone,
+  szero,
+  alpha = 0.05,
+  paired = FALSE
+)
 }
 \arguments{
 \item{yone}{numeric vector of primary response values in the treated group.}
@@ -20,6 +27,8 @@ and p the number of candidates. Sample ordering must match exactly
 with dimension \code{n0 x p} where n0 is the number of untreated
 samples and p the number of candidates. Sample ordering must match
 exactly \code{yzero}.}
+
+\item{alpha}{significance level of test, default is \code{0.05}}
 
 \item{paired}{logical flag giving if the data is independent or paired. If
 \code{FALSE} (default), samples are assumed independent. If

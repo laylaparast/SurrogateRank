@@ -12,7 +12,7 @@ Description: Uses a novel rank-based nonparametric approach to evaluate a surrog
   <https://parastlab.shinyapps.io/SurrogateRankApp/>.
 License: GPL
 Encoding: UTF-8
-Imports: stats,dplyr,ggplot2,pbmcapply, cowplot, tidyr,ComplexUpset
+Imports: stats,dplyr,ggplot2,pbmcapply, cowplot, tidyr, ComplexUpset, ggVennDiagram, tibble
 Suggests: 
     roxygen2
 Roxygen:
