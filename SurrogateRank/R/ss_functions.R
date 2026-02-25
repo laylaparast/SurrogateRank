@@ -48,7 +48,7 @@ delta.calculate <- function(full.data = NULL, yone = NULL, yzero = NULL, sone = 
   return(list("u.y" = as.numeric(u.y), "u.s" = as.numeric(u.s), "delta.estimate" = as.numeric(delta.estimate), "sd.u.y" = sd.y, "sd.u.s" = sd.s, "sd.delta" = as.numeric(sd.est)))
 }
 
-test.surrogate <- function(full.data = NULL, yone = NULL, yzero = NULL, sone = NULL, szero = NULL, epsilon = NULL, power.want.s = 0.7, u.y.hyp = NULL) {
+test.surrogate <- function(full.data = NULL, yone = NULL, yzero = NULL, sone = NULL, szero = NULL, epsilon = NULL, power.want.s = 0.7, u.y.hyp = NULL, alpha = 0.05) {
   if (!is.null(full.data)) {
     yone <- full.data[full.data[, 3] == 1, 1]
     yzero <- full.data[full.data[, 3] == 0, 1]
@@ -56,14 +56,14 @@ test.surrogate <- function(full.data = NULL, yone = NULL, yzero = NULL, sone = N
     szero <- full.data[full.data[, 3] == 0, 2]
   }
   dd <- delta.calculate(yone = yone, yzero = yzero, sone = sone, szero = szero)
-  z.alpha <- qnorm(0.95)
+  z.alpha <- qnorm(1-alpha)
   ci.delta <- c(-1, dd$delta.estimate + z.alpha * dd$sd.delta)
 
   if (is.null(epsilon)) {
     n1 <- length(yone)
     n0 <- length(yzero)
     sd.null <- sqrt((n1 + n0 + 1) / (12 * n1 * n0))
-    z.alpha.2 <- qnorm(0.975)
+    z.alpha.2 <- qnorm(1-(0.5*alpha))
     u.s.power <- 1 / 2 - (qnorm(1 - power.want.s) - z.alpha.2) * (sd.null)
     if (is.null(u.y.hyp)) {
       epsilon <- dd$u.y - u.s.power
@@ -83,12 +83,12 @@ test.surrogate <- function(full.data = NULL, yone = NULL, yzero = NULL, sone = N
   return(list("u.y" = as.numeric(dd$u.y), "u.s" = as.numeric(dd$u.s), "delta.estimate" = as.numeric(dd$delta.estimate), "sd.u.y" = dd$sd.u.y, "sd.u.s" = dd$sd.u.s, "sd.delta" = as.numeric(dd$sd.delta), "ci.delta" = ci.delta, "epsilon.used" = epsilon, "is.surrogate" = is.surrogate))
 }
 
-est.power <- function(n.total, rho = 0.80, u.y.alt, delta.alt, power.want.s = 0.7) {
+est.power <- function(n.total, rho = 0.80, u.y.alt, delta.alt, power.want.s = 0.7, alpha = 0.05) {
   delta.se.est <- sqrt(2 * (1 - rho) / (3 * n.total))
   sd.null <- sqrt((n.total + 1) / (3 * n.total^2))
-  z.alpha.2 <- qnorm(0.975)
+  z.alpha.2 <- qnorm(1-(0.5*alpha))
   u.s.power <- 1 / 2 - (qnorm(1 - power.want.s) - z.alpha.2) * (sd.null)
-  z.alpha <- qnorm(0.95)
+  z.alpha <- qnorm(1-alpha)
   est.power <- pnorm((1 / delta.se.est) * (u.y.alt - u.s.power - delta.alt) - z.alpha)
   return(est.power)
 }

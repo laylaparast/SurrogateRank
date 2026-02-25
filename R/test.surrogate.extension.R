@@ -110,6 +110,7 @@ test.surrogate.extension <- function(yone,
     yzero = yzero,
     sone = sone,
     szero = szero,
+    alpha = alpha,
     paired = paired
   )
 

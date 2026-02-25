@@ -55,6 +55,7 @@ delta.calculate.extension <- function(yone,
                                       yzero,
                                       sone,
                                       szero,
+                                      alpha = 0.05,
                                       paired = FALSE) {
   # Validity checks
   ## Check same number of samples in primary response and surrogates
