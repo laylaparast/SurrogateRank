@@ -382,7 +382,9 @@ rise.screen.meta = function(yone,
       p.adjusted = p.adjust(p, method = p.correction),
       weight.heterogeneity = 1 / weights.tau.sum,
       weight = weight.strength * weight.heterogeneity,
-      p.unadjusted = p
+      p.unadjusted = p,
+      pi.delta.lower = pi.lower,
+      pi.delta.upper = pi.upper
     ) %>%
     dplyr::select(
       marker,
@@ -391,6 +393,8 @@ rise.screen.meta = function(yone,
       se.delta,
       ci.delta.lower,
       ci.delta.upper,
+      pi.delta.lower,
+      pi.delta.upper,
       tau2,
       Q,
       I2,
