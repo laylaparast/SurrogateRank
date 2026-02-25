@@ -222,6 +222,20 @@ delta.reml.meta <- function(delta = NULL,
   }
   
   # -------------------------
+  # Prediction intervals
+  # -------------------------
+  # predictive standard error: HK variance of the pooled mean + between-study variance
+  var_pred <- (se.HK^2) + tau2.hat
+  se.pred <- sqrt(var_pred)
+  
+  # degrees of freedom for PI: commonly M-2; if too small, fall back to normal quantile
+  df_pi <- n.studies - 2
+  tcrit_pi <- qt(1 - alpha / 2, df = df_pi)
+  
+  pi.lower <- mu.delta.hat - tcrit_pi * se.pred
+  pi.upper <- mu.delta.hat + tcrit_pi * se.pred
+  
+  # -------------------------
   # prepare output
   # -------------------------
   results <- list(
@@ -231,6 +245,8 @@ delta.reml.meta <- function(delta = NULL,
     se.delta = se.HK,
     ci.delta.upper = ci.HK[2],
     ci.delta.lower = ci.HK[1],
+    pi.lower = pi.lower,
+    pi.upper = pi.upper,
     p.lower = p.lower,
     p.upper = p.upper,
     p = p.final,
