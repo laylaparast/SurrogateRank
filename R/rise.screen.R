@@ -209,6 +209,16 @@ rise.screen <- function(yone,
                   p_unadjusted,
                   p_adjusted)
   
+  # Add a message to warn users about degenerate standard error estimation
+  if(any(results$sd == 0)){
+    n_zero <- sum(results$sd == 0)
+    warning(sprintf(
+      "For %d markers, the estimated standard error is 0. This occurs when the candidate marker and the primary endpoint show complete pairwise concordance in the observed sample, leading to a degenerate variance estimate. While this may reflect strong agreement between the marker and the endpoint, the sampling variability cannot be estimated, and standard inference (confidence intervals and p-values) is therefore not reliable. This situation is more likely with small sample sizes or when no discordant pairs are observed. Interpret the results for these markers with caution.",
+      n_zero
+    ))
+  }
+
+  
   # Retreive names of significant markers
   significant_markers <- results %>%
     filter(p_adjusted < alpha) %>%

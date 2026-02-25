@@ -9,7 +9,7 @@
 #' @param alternative character giving the alternative hypothesis type for testing the summary effect.
 #'   One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
-#' @param sample.sizes numeric vector of sample sizes (note: individuals, not observations). These should be 
+#' @param sample.sizes numeric vector of sample sizes. These should be 
 #'   provided in case the estimated standard error for a given study is exactly 0. In order to compute 
 #'   estimates of cochrane's Q and I-squared, a conservative bound for the variance is used. This bound
 #'   is rooted in U-statistic theory and is taken by ignoring the covariance term when estmating the variance 
@@ -66,17 +66,17 @@ delta.reml.meta <- function(delta = NULL,
     stop("epsilon (equivalence margin) must be supplied")
   }
   
-  # # Remove values with exactly 0 standard deviation
-  # if (any(sd.delta == 0)) {
-  #   delta = delta[-which(sd.delta == 0)]
-  #   sd.delta = sd.delta[-which(sd.delta == 0)]
-  #   if (verbose) {
-  #     message(
-  #       "Note : one or multiple studies have exactly 0 estimated standard error.
-  #             Removing this study from the analysis."
-  #     )
-  #   }
-  # }
+  # Remove values with exactly 0 standard deviation
+  if (any(sd.delta == 0)) {
+    delta = delta[-which(sd.delta == 0)]
+    sd.delta = sd.delta[-which(sd.delta == 0)]
+    # if (verbose) {
+    #   message(
+    #     "Note : one or multiple studies have exactly 0 estimated standard error.
+    #           Removing this study from the analysis."
+    #   )
+    # }
+  }
   
   # Reset the value of n.studies
   n.studies = length(delta)

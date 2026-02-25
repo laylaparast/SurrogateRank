@@ -297,6 +297,29 @@ rise.screen.meta = function(yone,
   delta.reml.marker = vector(mode = "list", length = length(all.markers))
   names(delta.reml.marker) = all.markers
   
+  
+  # If some markers in some studies have exactly 0 standard error, report this
+  if (any(gamma.results.allstudies.df$sd.delta == 0)) {
+    sd0.studies = rise.screen.results.allstudies.df %>%
+      filter(sd == 0) %>%
+      pull(study)
+    
+    message(
+      paste0(
+        "Note: studies '",
+        paste(sd0.studies, collapse = ", "),
+        "' have degenerate (exactly 0) estimation of standard error",
+        " for some markers. ",
+        "This is likely due to small sample size and perfect pairwise", 
+        " concordance between gamma and the primary endpoint.",
+        " These studies will be removed from the meta-analysis for those markers only."
+      )
+    )
+    
+    rise.screen.results.allstudies.df = rise.screen.results.allstudies.df %>% 
+      filter(sd != 0)
+  }
+  
   for (m in all.markers) {
     # Extract cross-study screening results for a marker
     df.summary.marker = rise.screen.results.allstudies.df %>%
@@ -509,11 +532,16 @@ rise.screen.meta = function(yone,
       paste0(
         "Note: studies '",
         paste(sd0.studies, collapse = ", "),
-        "' have exactly 0 estimated standard error ",
-        "for the combined marker gamma. ",
-        "This variance will be corrected to a the smallest variance under the null (1/4n) for the weighting."
+        "' have degenerate (exactly 0) estimation of standard error",
+        " for the combined marker delta. ",
+        "This is likely due to small sample size and perfect pairwise", 
+        " concordance between gamma and the primary endpoint.",
+        " These studies will be removed from the meta-analysis for delta."
       )
     )
+
+    gamma.results.allstudies.df = gamma.results.allstudies.df %>% 
+      filter(sd.delta != 0)
   }
   
   # Now do random effects summary for gamma
@@ -946,10 +974,6 @@ rise.screen.meta = function(yone,
     
   } else {
     forest.plot = NULL
-  }
-  
-  if (return.forest.plot) {
-    
   }
   
   gamma.s.plot <- list(

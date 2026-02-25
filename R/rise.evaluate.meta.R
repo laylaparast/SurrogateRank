@@ -292,11 +292,16 @@ rise.evaluate.meta = function(yone,
       paste0(
         "Note: studies '",
         paste(sd0.studies, collapse = ", "),
-        "' have exactly 0 estimated standard error ",
-        "for the combined marker gamma. ",
-        "This variance will be corrected for the purposes of computing I-squared values."
+        "' have degenerate (exactly 0) estimation of standard error",
+        " for the combined marker gamma. ",
+        "This is likely due to small sample size and perfect pairwise", 
+        " concordance between gamma and the primary endpoint.",
+        " These studies will be removed from the meta-analysis."
       )
     )
+    
+    evaluation.metrics.study = evaluation.metrics.study %>% 
+      filter(sd !=0)
   }
   
   # Now do meta-analysis on these results
