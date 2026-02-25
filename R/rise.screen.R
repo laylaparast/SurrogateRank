@@ -183,12 +183,14 @@ rise.screen <- function(yone,
   
   # Calculate the treatment effect on the primary response
   
-  u.y = SurrogateRank::test.surrogate(
+  u.y = SurrogateRank::delta.calculate.extension(
     yone = yone,
     yzero = yzero,
     sone = yone,
-    szero = yzero
+    szero = yzero,
+    paired = paired
   )$u.y
+  
   
   results$u.y = u.y
   results$u.s = u.y - results$delta

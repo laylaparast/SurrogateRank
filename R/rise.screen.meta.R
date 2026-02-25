@@ -80,7 +80,7 @@
 #'   are \code{TRUE}, returns fitted evaluation plots on training data as a list.
 #' }
 #'
-#' @import dplyr pbmcapply ggplot2 cowplot ggVennDiagram ComplexUpset tidyr
+#' @import dplyr pbmcapply ggplot2 cowplot ComplexUpset tidyr
 #' @export
 #' @author Arthur Hughes
 #'
@@ -230,7 +230,7 @@ rise.screen.meta = function(yone,
     # Extract relevant screening results
     rise.screen.results.allstudies[[ix]] <- screen.results.study[["screening.metrics"]] %>%
       mutate(study = study) %>%
-      dplyr::select(study, marker, n, delta, sd, p_unadjusted, p_adjusted)
+      dplyr::select(study, marker, n, u.y, u.s, delta, sd, p_unadjusted, p_adjusted)
     
     # Increase index
     ix <- ix + 1L
@@ -248,11 +248,11 @@ rise.screen.meta = function(yone,
       mutate(study_label = paste0(study, " (N = ", n, ")")) %>%
       {
         setNames(.$markers, .$study_label)
-      }  # named list for ggVennDiagram
+      }
     
     # Plot Venn diagram
     venn.plot <- suppressWarnings(
-      ggVennDiagram(sig_list) +
+      ggVennDiagram::ggVennDiagram(sig_list) +
         scale_fill_gradient(low = "white", high = "steelblue") +
         theme(
           legend.position = "none",
@@ -301,6 +301,11 @@ rise.screen.meta = function(yone,
     # Extract cross-study screening results for a marker
     df.summary.marker = rise.screen.results.allstudies.df %>%
       filter(marker == m)
+  
+    # Compute CCC
+    x <- df.summary.marker$u.y
+    y <- df.summary.marker$u.s
+    ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
     
     # Extract the values of delta
     delta.marker = df.summary.marker %>%
@@ -327,6 +332,7 @@ rise.screen.meta = function(yone,
     # Initialise weight values
     delta.reml.marker[[m]]$weights.tau <- NULL
     delta.reml.marker[[m]]$weights.tau.relative <- NULL
+    delta.reml.marker[[m]]$ccc = ccc
   }
   
   # Bind per-marker results into a data frame
@@ -363,6 +369,7 @@ rise.screen.meta = function(yone,
       tau2,
       Q,
       I2,
+      ccc,
       p.unadjusted,
       p.adjusted,
       weight
