@@ -286,7 +286,8 @@ rise.evaluate.meta = function(yone,
   if (any(evaluation.metrics.study$sd == 0)) {
     sd0.studies = evaluation.metrics.study %>%
       filter(sd == 0) %>%
-      pull(study)
+      pull(study) %>% 
+      unique()
     
     message(
       paste0(

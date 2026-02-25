@@ -30,7 +30,7 @@ desired \code{alpha} if using this option.}
 One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 corresponds to a two one-sided test procedure. Default is "two.sided".}
 
-\item{sample.sizes}{numeric vector of sample sizes (note: individuals, not observations). These should be
+\item{sample.sizes}{numeric vector of sample sizes. These should be
 provided in case the estimated standard error for a given study is exactly 0. In order to compute
 estimates of cochrane's Q and I-squared, a conservative bound for the variance is used. This bound
 is rooted in U-statistic theory and is taken by ignoring the covariance term when estmating the variance

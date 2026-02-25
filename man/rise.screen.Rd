@@ -21,7 +21,8 @@ rise.screen(
   return.all.screen = TRUE,
   return.all.weights = FALSE,
   weight.mode = "inverse.delta",
-  normalise.weights = TRUE
+  normalise.weights = TRUE,
+  verbose = T
 )
 }
 \arguments{

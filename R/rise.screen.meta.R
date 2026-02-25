@@ -224,7 +224,8 @@ rise.screen.meta = function(yone,
       return.all.screen = TRUE,
       return.all.weights = F,
       weight.mode = weight.mode,
-      normalise.weights = F
+      normalise.weights = F,
+      verbose = F
     )
     
     # Extract relevant screening results
@@ -299,10 +300,11 @@ rise.screen.meta = function(yone,
   
   
   # If some markers in some studies have exactly 0 standard error, report this
-  if (any(gamma.results.allstudies.df$sd.delta == 0)) {
+  if (any(rise.screen.results.allstudies.df$sd == 0)) {
     sd0.studies = rise.screen.results.allstudies.df %>%
       filter(sd == 0) %>%
-      pull(study)
+      pull(study) %>% 
+      unique()
     
     message(
       paste0(
@@ -526,7 +528,8 @@ rise.screen.meta = function(yone,
   if (any(gamma.results.allstudies.df$sd.delta == 0)) {
     sd0.studies = gamma.results.allstudies.df %>%
       filter(sd.delta == 0) %>%
-      pull(study)
+      pull(study) %>% 
+      unique()
     
     message(
       paste0(
