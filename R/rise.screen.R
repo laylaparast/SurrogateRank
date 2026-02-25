@@ -148,7 +148,8 @@ rise.screen <- function(yone,
       alternative = alternative,
       paired = paired,
       power.want.s = power.want.s,
-      epsilon = epsilon
+      epsilon = epsilon,
+      alpha = alpha
     )
     
     res <- do.call(test.surrogate.extension, args)

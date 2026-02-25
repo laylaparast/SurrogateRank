@@ -81,8 +81,8 @@ delta.calculate.extension <- function(yone,
   # Independent case
   if (!paired) {
     # Use Wilcoxon rank-sum test for independent samples
-    test.y <- wilcox.test(yone, yzero, exact = FALSE)
-    test.s <- wilcox.test(sone, szero, exact = FALSE)
+    test.y <- wilcox.test(yone, yzero, exact = FALSE, conf.level = 1-alpha)
+    test.s <- wilcox.test(sone, szero, exact = FALSE, conf.level = 1-alpha)
 
     # Normalize test statistics to estimate U statistics
     n1.f <- length(yone)
