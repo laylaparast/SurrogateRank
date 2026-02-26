@@ -2,7 +2,7 @@
 % Please edit documentation in R/test.surrogate.extension.R
 \name{test.surrogate.extension}
 \alias{test.surrogate.extension}
-\title{Function to test for trial-level surrogacy of a single marker extended to the paired,
+\title{Tests whether the surrogate is valid, extended to the paired,
 two sided test setting}
 \usage{
 test.surrogate.extension(
@@ -75,10 +75,7 @@ A list containing:
 }
 }
 \description{
-This function tests for surrogacy of a univariate marker with respect to a continuous primary
-response. This extends the \code{test.surrogate()} function from the \code{SurrogateRank}
-package to the case where samples may be paired instead of independent, and where a two sided
-test is desired.
+Calculates the rank-based test statistic for Y and the rank-based test statistic for S and the difference, delta, along with corresponding standard error estimates, then tests whether the surrogate is valid. This extends the \code{test.surrogate()} function to the case where samples may be paired instead of independent, and where a two sided test is desired.
 }
 \examples{
 # Load data
