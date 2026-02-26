@@ -422,7 +422,7 @@ rise.evaluate.meta = function(yone,
                          expand = c(0, 0)) +
       coord_fixed(ratio = 1) +
       labs(
-        title = "Treatment effects on primary response and combined marker on training data",
+        title = "Treatment effects on primary response and combined marker on evaluation data",
         x = "Treatment effect on primary outcome",
         y = "Treatment effect on combined marker",
         size = "Study N",

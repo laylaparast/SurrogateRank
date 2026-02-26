@@ -10,6 +10,7 @@ if (getRversion() >= "2.15.1") {
       "label.pval", "label.wgt", "mu.delta", "n.studies", "p", "p.adjusted", "p.delta",
       "p.unadjusted", "sd.delta", "se.delta", "study.label", "study.weight",
       "study.weight.relative", "u.y", "weight.heterogeneity", "weight.strength",
-      "weights.tau.sum", "y", "n.indiv", "ci_width", ".", "present")
+      "weights.tau.sum", "y", "n.indiv", "ci_width", ".", "present",
+     "pi.delta.lower", "pi.delta.upper", "pi.lower", "pi.upper")
   )
 }
