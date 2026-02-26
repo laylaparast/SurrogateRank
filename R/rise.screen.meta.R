@@ -71,8 +71,8 @@
 #'   \item \code{screening.metrics.meta} : dataframe of meta-analysis screening results.
 #'   For each candidate marker - number of studies \code{n.studies},
 #'   estimate of mean delta value \code{mu.delta},
-#'   its standard error \code{se.delta} and \code{(1-alpha)*100%} confidence interval,
-#'   its \code{(1-alpha)*100%} prediction interval,
+#'   its standard error \code{se.delta} and 100%*1-alpha confidence interval,
+#'   its 100%*1-alpha prediction interval,
 #'   estimate of tau-squared \code{tau2}, Cochran's Q-statistic and Higgins-Thompson I-Squared,
 #'   unadjusted and adjusted meta-analysis p-values, and standardised weights.
 #'   \item \code{significant.markers}: character vector of markers with meta-analysis p-values \code{< alpha}
@@ -638,23 +638,32 @@ rise.screen.meta = function(yone,
       dplyr::select(u.y, u.s) %>%
       min() - 0.1
     
-    # Prepare legend sizing
     n_vals <- gamma.results.allstudies.df$n
-    round_down_10 <- function(x)
+    
+    round_down_10 <- function(x){
       floor(x / 10) * 10
-    round_up_10   <- function(x)
+    }
+    round_up_10   <- function(x){
       ceiling(x / 10) * 10
-    round_up_50   <- function(x)
+    }
+    round_up_50   <- function(x){
       ceiling(x / 50) * 50
+    }
     
-    min_label <- round_down_10(min(n_vals))
-    max_label <- round_up_10(max(n_vals))
-    mid_label <- round_up_50(median(n_vals))
-    
-    legend_breaks <- c(min(n_vals), mid_label, max(n_vals))
-    legend_labels <- c(as.character(min_label),
-                       as.character(mid_label),
-                       as.character(max_label))
+    if (length(unique(n_vals)) == 1) {
+      # All sample sizes equal → single legend key
+      legend_breaks <- unique(n_vals)
+      legend_labels <- as.character(unique(n_vals))
+    } else {
+      min_label <- round_down_10(min(n_vals))
+      max_label <- round_up_10(max(n_vals))
+      mid_label <- round_up_50(median(n_vals))
+      
+      legend_breaks <- c(min(n_vals), mid_label, max(n_vals))
+      legend_labels <- c(as.character(min_label),
+                         as.character(mid_label),
+                         as.character(max_label))
+    }
     
     # Plot with CCC annotation and improved sizing
     # Plot with smallest n always visible (size_min = 5)
@@ -1105,3 +1114,4 @@ rise.screen.meta = function(yone,
   )
   
 }
+

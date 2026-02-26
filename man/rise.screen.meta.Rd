@@ -104,7 +104,7 @@ When \code{"none"}, the weights are set to 1 for every marker.}
 all the weights such that the maximum weight is 1, which can help with interpretability.}
 
 \item{return.forest.plot}{logical flag. If \code{TRUE} (default), a forest plot of the effect sizes for the
-combined signature across studies, with its meta-analysis summary measure, will be included in the output.}
+combined signature across studies, with its meta-analysis summary measure and prediction interval, will be included in the output.}
 
 \item{return.fit.plot}{logical flag. If \code{TRUE} (default), a plot of the effects on the primary response
 versus the effects on the combined surrogate signature for each study will be included in the output.}
@@ -122,11 +122,14 @@ For each candidate marker - study name, study sample size, estimate of delta, st
 \item \code{screening.metrics.meta} : dataframe of meta-analysis screening results.
 For each candidate marker - number of studies \code{n.studies},
 estimate of mean delta value \code{mu.delta},
-its standard error \code{se.delta} and confidence interval,
+its standard error \code{se.delta} and 100\%*1-alpha confidence interval,
+its 100\%*1-alpha prediction interval,
 estimate of tau-squared \code{tau2}, Cochran's Q-statistic and Higgins-Thompson I-Squared,
 unadjusted and adjusted meta-analysis p-values, and standardised weights.
 \item \code{significant.markers}: character vector of markers with meta-analysis p-values \code{< alpha}
 \item \code{screening.weights}: dataframe giving marker names and the standardised meta-analysis weights
+\item \code{evaluation.metrics.study} : dataframe of per-study results for the combined marker gamma, evaluated on the same data
+\item \code{evaluation.metrics.meta} : dataframe of meta-analysis results for the combined marker gamma, evaluated on the same data
 \item \code{gamma.s.plot}: if \code{return.forest.plot}, \code{return.fit.plot}, and/or  \code{return.study.similarity.plot}
 are \code{TRUE}, returns fitted evaluation plots on training data as a list.
 }
