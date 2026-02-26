@@ -16,7 +16,7 @@ rise.evaluate(
   u.y.hyp = NULL,
   p.correction = "BH",
   n.cores = 1,
-  alternative = "less",
+  alternative = "two.sided",
   paired = FALSE,
   return.all.evaluate = TRUE,
   return.plot.evaluate = TRUE,
@@ -64,7 +64,7 @@ function. Defaults to \code{1}.}
 \item{alternative}{character giving the alternative hypothesis type. One of
 \code{c("less","two.sided")}, where "less" corresponds to a
 non-inferiority test and "two.sided" corresponds to a two one-sided test
-procedure. Default is "less".}
+procedure. Default is "two.sided".}
 
 \item{paired}{logical flag giving if the data is independent or paired. If
 \code{FALSE} (default), samples are assumed independent. If \code{TRUE},
@@ -95,6 +95,15 @@ If not given, will default to evaluating all markers in the dataframes.}
 \value{
 A list with:
 \itemize{
+<<<<<<< HEAD
+\item \code{individual.metrics} if \code{return.all.evaluate}=\code{TRUE}, a dataframe of
+evaluation results for each significant marker.
+\item \code{gamma.s} a list with elements \code{gamma.s.one} and \code{gamma.s.zero}, giving
+the combined surrogate marker in the treated and untreated groups, respectively.
+\item \code{gamma.s.evaluate} : a dataframe giving the evaluation of \code{gamma.s}
+\item \code{gamma.s.plot} : a ggplot2 plot showing \code{gamma.s} against the primary response
+on the rank-scale.
+=======
   \item \code{individual.metrics} If \code{return.all.evaluate = TRUE}, a dataframe of
   evaluation results for each significant marker.
   \item \code{gamma.s} A list with elements \code{gamma.s.one} and \code{gamma.s.zero}, giving
@@ -102,6 +111,7 @@ A list with:
   \item \code{gamma.s.evaluate} A dataframe giving the evaluation of \code{gamma.s}.
   \item \code{gamma.s.plot} A ggplot2 plot showing \code{gamma.s} against the primary response
   on the rank-scale.
+>>>>>>> origin/devel
 }
 }
 
