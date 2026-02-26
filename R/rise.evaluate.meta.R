@@ -364,14 +364,20 @@ rise.evaluate.meta = function(yone,
     round_up_50   <- function(x)
       ceiling(x / 50) * 50
     
-    min_label <- round_down_10(min(n_vals))
-    max_label <- round_up_10(max(n_vals))
-    mid_label <- round_up_50(median(n_vals))
-    
-    legend_breaks <- c(min(n_vals), mid_label, max(n_vals))
-    legend_labels <- c(as.character(min_label),
-                       as.character(mid_label),
-                       as.character(max_label))
+    if (length(unique(n_vals)) == 1) {
+      # All sample sizes equal → single legend key
+      legend_breaks <- unique(n_vals)
+      legend_labels <- as.character(unique(n_vals))
+    } else {
+      min_label <- round_down_10(min(n_vals))
+      max_label <- round_up_10(max(n_vals))
+      mid_label <- round_up_50(median(n_vals))
+      
+      legend_breaks <- c(min(n_vals), mid_label, max(n_vals))
+      legend_labels <- c(as.character(min_label),
+                         as.character(mid_label),
+                         as.character(max_label))
+    }
     
     # Plot with CCC annotation and improved sizing
     # Plot with smallest n always visible (size_min = 5)
@@ -448,6 +454,8 @@ rise.evaluate.meta = function(yone,
         delta = mu.delta,
         ci.lower = ci.delta.lower,
         ci.upper = ci.delta.upper,
+        pi.lower = pi.lower,
+        pi.upper = pi.upper,
         u.y = NA,
         u.s = NA,
         study.weight = NA,
@@ -458,7 +466,8 @@ rise.evaluate.meta = function(yone,
         p.unadjusted = p,
         p.adjusted = NA
       ) %>%
-      select(all_of(colnames(evaluation.metrics.study.temp)))
+      select(all_of(colnames(evaluation.metrics.study.temp)), pi.lower, pi.upper) %>%
+      distinct()
     
     if (show.pooled.effect) {
       evaluation.metrics.study2 = bind_rows(evaluation.metrics.study.temp, df.gamma.temp)
@@ -467,7 +476,6 @@ rise.evaluate.meta = function(yone,
     }
     
     I2 = evaluation.metrics.meta$I2
-    
     tau2 = evaluation.metrics.meta$tau2
     
     # Compute CCC
@@ -499,16 +507,63 @@ rise.evaluate.meta = function(yone,
         summary_size = pmin(ci_width / 2, 6)
       )
     
+    # preserve summary CI for diamond (capture before blanking ci for summary)
+    plot.df <- plot.df %>%
+      mutate(
+        summary.ci.lower = ifelse(is.summary, ci.lower, NA_real_),
+        summary.ci.upper = ifelse(is.summary, ci.upper, NA_real_)
+      ) %>%
+      # blank generic study CI for summary rows (so geom_errorbar doesn't draw a bar for summary)
+      mutate(
+        ci.lower = ifelse(is.summary, NA_real_, ci.lower),
+        ci.upper = ifelse(is.summary, NA_real_, ci.upper)
+      )
+    
+    # add prediction-interval row (keeps its pi.lower/pi.upper values from summary.row),
+    # placed below the pooled summary (y = -1), and prevent generic CI drawing
+    if (show.pooled.effect) {
+      pi.row <- summary.row %>%
+        mutate(
+          study = paste0(100 * (1 - alpha), "% Prediction interval"),
+          study.label = paste0(100 * (1 - alpha), "% Prediction interval"),
+          ci.lower = NA_real_,
+          ci.upper = NA_real_,
+          # keep pi.lower / pi.upper as they come from summary.row (do not overwrite)
+          p.unadjusted = NA_real_,
+          n = NA_integer_,
+          study.weight = NA_real_,
+          study.weight.relative = NA_real_,
+          y = -1,
+          is.summary = FALSE,
+          label.pval = "",
+          label.n = ""
+        )
+      plot.df <- bind_rows(plot.df, pi.row)
+    }
+    
     # Labels for weighting
     weights.vec <- studies.df$study.weight.relative
     pct.vec <- weights.vec
     label.wgt.vec <- formatC(pct.vec, format = "f", digits = 1)
     
-    # attach weight labels to plot.df (empty for summary)
+    # attach weight labels to plot.df (empty for summary / PI row)
     plot.df <- plot.df %>%
       left_join(tibble(study = studies.df$study, label.wgt = label.wgt.vec),
                 by = "study") %>%
       mutate(label.wgt = ifelse(is.na(label.wgt), "", label.wgt))
+    
+    # prepare diamond polygon data for pooled summary (single diamond)
+    diamond.df <- data.frame(x = numeric(0), y = numeric(0))
+    if (any(plot.df$is.summary)) {
+      s <- plot.df %>% filter(is.summary) %>% slice(1)
+      if (!is.na(s$summary.ci.lower) && !is.na(s$summary.ci.upper)) {
+        h <- 0.10   # slim diamond height
+        diamond.df <- data.frame(
+          x = c(s$delta, s$summary.ci.upper, s$delta, s$summary.ci.lower),
+          y = c(s$y + h, s$y, s$y - h, s$y)
+        )
+      }
+    }
     
     # Heterogeneity text from provided object evaluation.metrics.meta
     tau2.txt <- formatC(evaluation.metrics.meta$tau2,
@@ -523,10 +578,7 @@ rise.evaluate.meta = function(yone,
     
     # Plot parameters
     base.text.size <- 14
-    y.min <- if (show.pooled.effect)
-      - 1
-    else
-      0
+    y.min <- if (show.pooled.effect) -1.5 else 0
     y.max <- k + 1
     rel.w.left  <- 0.45
     rel.w.mid   <- 1.10
@@ -564,6 +616,7 @@ rise.evaluate.meta = function(yone,
     
     # Middle panel: forest plot (uses delta and ci.* columns)
     forest.mid <- ggplot(plot.df, aes(x = delta, y = y)) +
+      # study CIs (will be NA for summary and PI rows)
       geom_errorbar(
         aes(xmin = ci.lower, xmax = ci.upper),
         width = 0.15,
@@ -571,15 +624,26 @@ rise.evaluate.meta = function(yone,
         orientation = "y"
       ) +
       geom_point(
-        data = filter(plot.df, !is.summary),
+        data = filter(plot.df, !is.summary & study != paste0(100 * (1 - alpha), "% Prediction interval")),
         shape = 16,
         size = 3.5
       ) +
-      geom_point(
-        data = filter(plot.df, is.summary),
-        size = 4,
-        shape = 5,
-        stroke = 1.2
+      # pooled summary drawn as diamond polygon (width = CI)
+      geom_polygon(
+        data = diamond.df,
+        aes(x = x, y = y),
+        inherit.aes = FALSE,
+        fill = "#CCCCCC",
+        color = "black"
+      ) +
+      # prediction interval row (red horizontal line, no central point)
+      geom_errorbar(
+        data = filter(plot.df, study == paste0(100 * (1 - alpha), "% Prediction interval")),
+        aes(xmin = pi.lower, xmax = pi.upper),
+        width = 0.15,
+        linewidth = 1.5,
+        color = "#EF5C52",
+        orientation = "y"
       ) +
       scale_x_continuous(
         limits = c(x.min, x.max),
@@ -748,6 +812,9 @@ rise.evaluate.meta = function(yone,
     } else {
       forest.plot <- combined
     }
+    
+  } else {
+    forest.plot = NULL
   }
   
   if (return.all.evaluate) {
