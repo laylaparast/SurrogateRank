@@ -57,7 +57,7 @@
 #' @param normalise.weights logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 #'   all the weights such that the maximum weight is 1, which can help with interpretability.
 #' @param return.forest.plot logical flag. If \code{TRUE} (default), a forest plot of the effect sizes for the
-#' combined signature across studies, with its meta-analysis summary measure, will be included in the output.
+#' combined signature across studies, with its meta-analysis summary measure and prediction interval, will be included in the output.
 #' @param return.fit.plot logical flag. If \code{TRUE} (default), a plot of the effects on the primary response
 #' versus the effects on the combined surrogate signature for each study will be included in the output.
 #' @param show.pooled.effect logical flag. If \code{TRUE} (default), the forest plot will show the pooled effect
@@ -71,11 +71,14 @@
 #'   \item \code{screening.metrics.meta} : dataframe of meta-analysis screening results.
 #'   For each candidate marker - number of studies \code{n.studies},
 #'   estimate of mean delta value \code{mu.delta},
-#'   its standard error \code{se.delta} and confidence interval,
+#'   its standard error \code{se.delta} and \code{(1-alpha)*100%} confidence interval,
+#'   its \code{(1-alpha)*100%} prediction interval,
 #'   estimate of tau-squared \code{tau2}, Cochran's Q-statistic and Higgins-Thompson I-Squared,
 #'   unadjusted and adjusted meta-analysis p-values, and standardised weights.
 #'   \item \code{significant.markers}: character vector of markers with meta-analysis p-values \code{< alpha}
 #'   \item \code{screening.weights}: dataframe giving marker names and the standardised meta-analysis weights
+#'   \item \code{evaluation.metrics.study} : dataframe of per-study results for the combined marker gamma, evaluated on the same data
+#'   \item \code{evaluation.metrics.meta} : dataframe of meta-analysis results for the combined marker gamma, evaluated on the same data
 #'   \item \code{gamma.s.plot}: if \code{return.forest.plot}, \code{return.fit.plot}, and/or  \code{return.study.similarity.plot}
 #'   are \code{TRUE}, returns fitted evaluation plots on training data as a list.
 #' }
@@ -231,7 +234,15 @@ rise.screen.meta = function(yone,
     # Extract relevant screening results
     rise.screen.results.allstudies[[ix]] <- screen.results.study[["screening.metrics"]] %>%
       mutate(study = study) %>%
-      dplyr::select(study, marker, n, u.y, u.s, delta, sd, p_unadjusted, p_adjusted)
+      dplyr::select(study,
+                    marker,
+                    n,
+                    u.y,
+                    u.s,
+                    delta,
+                    sd,
+                    p_unadjusted,
+                    p_adjusted)
     
     # Increase index
     ix <- ix + 1L
@@ -303,7 +314,7 @@ rise.screen.meta = function(yone,
   if (any(rise.screen.results.allstudies.df$sd == 0)) {
     sd0.studies = rise.screen.results.allstudies.df %>%
       filter(sd == 0) %>%
-      pull(study) %>% 
+      pull(study) %>%
       unique()
     
     message(
@@ -312,13 +323,13 @@ rise.screen.meta = function(yone,
         paste(sd0.studies, collapse = ", "),
         "' have degenerate (exactly 0) estimation of standard error",
         " for some markers. ",
-        "This is likely due to small sample size and perfect pairwise", 
+        "This is likely due to small sample size and perfect pairwise",
         " concordance between gamma and the primary endpoint.",
         " These studies will be removed from the meta-analysis for those markers only."
       )
     )
     
-    rise.screen.results.allstudies.df = rise.screen.results.allstudies.df %>% 
+    rise.screen.results.allstudies.df = rise.screen.results.allstudies.df %>%
       filter(sd != 0)
   }
   
@@ -326,7 +337,7 @@ rise.screen.meta = function(yone,
     # Extract cross-study screening results for a marker
     df.summary.marker = rise.screen.results.allstudies.df %>%
       filter(marker == m)
-  
+    
     # Compute CCC
     x <- df.summary.marker$u.y
     y <- df.summary.marker$u.s
@@ -532,7 +543,7 @@ rise.screen.meta = function(yone,
   if (any(gamma.results.allstudies.df$sd.delta == 0)) {
     sd0.studies = gamma.results.allstudies.df %>%
       filter(sd.delta == 0) %>%
-      pull(study) %>% 
+      pull(study) %>%
       unique()
     
     message(
@@ -541,13 +552,13 @@ rise.screen.meta = function(yone,
         paste(sd0.studies, collapse = ", "),
         "' have degenerate (exactly 0) estimation of standard error",
         " for the combined marker delta. ",
-        "This is likely due to small sample size and perfect pairwise", 
+        "This is likely due to small sample size and perfect pairwise",
         " concordance between gamma and the primary endpoint.",
         " These studies will be removed from the meta-analysis for delta."
       )
     )
-
-    gamma.results.allstudies.df = gamma.results.allstudies.df %>% 
+    
+    gamma.results.allstudies.df = gamma.results.allstudies.df %>%
       filter(sd.delta != 0)
   }
   
@@ -578,7 +589,7 @@ rise.screen.meta = function(yone,
   )[["results"]]
   
   study.weights = data.frame(delta.reml.gamma$weights.tau.relative)
-  
+  #jump
   # Initialise temporary dataframe for results
   df.gamma.temp = data.frame(
     "study" = "Pooled effect",
@@ -587,10 +598,36 @@ rise.screen.meta = function(yone,
     "sd.delta" = delta.reml.gamma$se.delta,
     "ci.delta.lower" = delta.reml.gamma$ci.delta.lower,
     "ci.delta.upper" = delta.reml.gamma$ci.delta.upper,
+    "pi.delta.lower" = delta.reml.gamma$pi.lower,
+    "pi.delta.upper" = delta.reml.gamma$pi.upper,
     "u.y" = NA,
     "u.s" = NA,
     "p" = delta.reml.gamma$p,
     "study.weights" = NA
+  )
+  
+  # Compute CCC
+  x <- gamma.results.allstudies.df$u.y
+  y <- gamma.results.allstudies.df$u.s
+  ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
+  
+  # Initialise dataframe for evaluation output
+  evaluation.metrics.meta = data.frame(
+    "marker" = "gamma",
+    "n.studies" = delta.reml.gamma$n.studies,
+    "mu.delta" = delta.reml.gamma$mu.delta,
+    "se.delta" = delta.reml.gamma$se.delta,
+    "ci.delta.upper" = delta.reml.gamma$ci.delta.upper,
+    "ci.delta.lower" = delta.reml.gamma$ci.delta.lower,
+    "pi.delta.upper" = delta.reml.gamma$pi.upper,
+    "pi.delta.lower" = delta.reml.gamma$pi.lower,
+    "tau2" = delta.reml.gamma$tau2,
+    "Q" = delta.reml.gamma$Q,
+    "I2" = delta.reml.gamma$I2,
+    "ccc" = ccc,
+    "p.unadjusted" = delta.reml.gamma$p,
+    "p.adjusted" = delta.reml.gamma$p,
+    "weight" = 1
   )
   
   # If fit plot desired, return it
@@ -600,11 +637,6 @@ rise.screen.meta = function(yone,
     plot.min.global <- gamma.results.allstudies.df %>%
       dplyr::select(u.y, u.s) %>%
       min() - 0.1
-    
-    # Compute CCC
-    x <- gamma.results.allstudies.df$u.y
-    y <- gamma.results.allstudies.df$u.s
-    ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
     
     # Prepare legend sizing
     n_vals <- gamma.results.allstudies.df$n
@@ -728,6 +760,35 @@ rise.screen.meta = function(yone,
         label.n = ifelse(is.na(n), "", as.character(n))
       )
     
+    # preserve summary CI for diamond and prevent generic errorbar from drawing for summary
+    plot.df <- plot.df %>%
+      mutate(
+        summary.ci.lower = ifelse(is.summary, ci.delta.lower, NA_real_),
+        summary.ci.upper = ifelse(is.summary, ci.delta.upper, NA_real_),
+        ci.delta.lower = ifelse(is.summary, NA_real_, ci.delta.lower),
+        ci.delta.upper = ifelse(is.summary, NA_real_, ci.delta.upper)
+      )
+    
+    # add prediction-interval row (keeps its pi.delta.* values from summary.row),
+    # placed below the pooled summary (y = -1), and prevent generic CI drawing
+    if (show.pooled.effect) {
+      pi.row <- summary.row %>%
+        mutate(
+          study = paste0(100*(1-alpha), "% Prediction interval"),
+          study.label = paste0(100*(1-alpha), "% Prediction interval"),
+          ci.delta.lower = NA_real_,
+          ci.delta.upper = NA_real_,
+          p = NA_real_,
+          n = NA_integer_,
+          study.weights = NA_real_,
+          y = -1,
+          is.summary = FALSE,
+          label.pval = "",
+          label.n = ""
+        )
+      plot.df <- bind_rows(plot.df, pi.row)
+    }
+    
     # Labels for weighting
     weights.vec <- studies.df$study.weights
     pct.vec <- weights.vec
@@ -739,6 +800,19 @@ rise.screen.meta = function(yone,
                 by = "study") %>%
       mutate(label.wgt = ifelse(is.na(label.wgt), "", label.wgt))
     
+    # prepare diamond polygon data for pooled summary (single diamond)
+    diamond.df <- data.frame(x = numeric(0), y = numeric(0))
+    if (any(plot.df$is.summary)) {
+      s <- plot.df %>% filter(is.summary) %>% slice(1)
+      if (!is.na(s$summary.ci.lower) && !is.na(s$summary.ci.upper)) {
+        h <- 0.1   # reduced height (was 0.25)
+        diamond.df <- data.frame(
+          x = c(s$delta.estimate, s$summary.ci.upper, s$delta.estimate, s$summary.ci.lower),
+          y = c(s$y + h, s$y, s$y - h, s$y)
+        )
+      }
+    }
+    
     # Heterogeneity text from provided object delta.reml.gamma
     tau2.txt <- formatC(delta.reml.gamma$tau2,
                         digits = 4,
@@ -746,16 +820,15 @@ rise.screen.meta = function(yone,
     I2.txt   <- formatC(delta.reml.gamma$I2,
                         digits = 1,
                         format = "f")
-    ccc.txt = formatC(ccc,
-                      digits = 2,
-                      format = "f")
+    ccc.txt = formatC(ccc, digits = 2, format = "f")
     
     # Plot parameters
     base.text.size <- 14
-    y.min <- if (show.pooled.effect)
-      - 1
-    else
+    y.min <- if (show.pooled.effect){
+      -1.5
+    } else {
       0
+    }
     y.max <- k + 1
     rel.w.left  <- 0.45
     rel.w.mid   <- 1.10
@@ -800,15 +873,26 @@ rise.screen.meta = function(yone,
         orientation = "y"
       ) +
       geom_point(
-        data = filter(plot.df, !is.summary),
+        data = filter(plot.df, !is.summary & study != paste0(100*(1-alpha), "% Prediction interval")),
         shape = 16,
         size = 3.5
       ) +
-      geom_point(
-        data = filter(plot.df, is.summary),
-        size = 4,
-        shape = 5,
-        stroke = 1.2
+      # pooled summary drawn as diamond polygon (width = CI)
+      geom_polygon(
+        data = diamond.df,
+        aes(x = x, y = y),
+        inherit.aes = FALSE,
+        fill = "#CCCCCC",
+        color = "black"
+      ) +
+      # prediction interval row (red horizontal line, no central point)
+      geom_errorbar(
+        data = filter(plot.df, study == paste0(100*(1-alpha), "% Prediction interval")),
+        aes(xmin = pi.delta.lower, xmax = pi.delta.upper),
+        width = 0.15,
+        linewidth = 1.5,
+        color = "#EF5C52",
+        orientation = "y"
       ) +
       scale_x_continuous(
         limits = c(x.min, x.max),
@@ -961,7 +1045,14 @@ rise.screen.meta = function(yone,
       align = "h"
     )
     
-    info.text <- paste0("Tau-squared = ", tau2.txt, "   |   I-Squared = ", I2.txt, "%   |  Lin's CCC =  ", ccc.txt,"   |   k = ", k)
+    info.text <- paste0("Tau-squared = ",
+                        tau2.txt,
+                        "   |   I-Squared = ",
+                        I2.txt,
+                        "%   |  Lin's CCC =  ",
+                        ccc.txt,
+                        "   |   k = ",
+                        k)
     info.grob <- ggdraw() + draw_label(
       info.text,
       x = 0.5,
@@ -1007,6 +1098,8 @@ rise.screen.meta = function(yone,
       "screening.metrics.meta" = delta.reml.df,
       "significant.markers" = significant.markers,
       "screening.weights" = weights.significant,
+      "evaluation.metrics.study" = gamma.results.allstudies.df,
+      "evaluation.metrics.meta" = evaluation.metrics.meta,
       "gamma.s.plot" = gamma.s.plot
     )
   )
