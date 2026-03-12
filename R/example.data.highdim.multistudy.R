@@ -1,18 +1,16 @@
-#' High‑dimensional, multi-study surrogate candidate example dataset
+#' High-dimensional, multi-study surrogate candidate example dataset
 #'
-#' A simulated high‑dimensional, multi-study dataset for demonstrating the RISE-meta methodology
-#' implemented in \pkg{SurrogateRank}. The data contains primary response and
-#' 1000 surrogate candidates from 10 studues of varying sample sizes.
-#' 10% of the surrogate candidates are "valid", where the strength of the surrogacy depends on the study.
+#' A simulated high-dimensional, multi-study dataset for demonstrating the RISE-meta methodology
+#' implemented in \pkg{SurrogateRank}, generated with the simulate.multi.study.surrogates() function.
+#' The data contains treatment effect measures on the primary endpoint and on 500 surrogate candidates,
+#' where the first 50 of these candidates are "valid" surrogates.
 #'
-#' @format A list containing :
+#' @format A list with the following components:
 #' \describe{
-#'   \item{y1}{primary response in treated}
-#'   \item{y0}{primary response in untreated}
-#'   \item{s1}{\code{P} surrogate candidates in treated}
-#'   \item{s0}{\code{P} surrogate candidates in untreated}
-#'   \item{study}{vector of \code{K} study names}
-#'   \item{hyp}{vector of \code{P} hypotheses where \code{null false} if the surrogate is valid}
+#'   \item{uy}{Numeric vector of length \code{M} containing treatment effects on the primary endpoint across trials.}
+#'   \item{us}{Numeric matrix of dimension \code{M} times \code{J} containing treatment effects on each of the \code{J} candidate markers.}
+#'   \item{hyp}{Vector of length \code{J} containing the truth of surrogate validity. \code{null false} corresponds to valid surrogates, whereas \code{null true} corresponds to invalid surrogates.}
+#'   \item{epsilon}{Value of \code{epsilon} used to define surrogate validity.}
 #' }
 #'
 #' @usage data("example.data.highdim.multistudy", package = "SurrogateRank")
