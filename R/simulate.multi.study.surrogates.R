@@ -25,6 +25,11 @@
 #'   component (\eqn{\nu_j}) used to scale within-study sampling error.
 #' @param prop_invalid_under Numeric, between 0 and 1. Probability that an invalid
 #'   marker underestimates the treatment effect on Y.
+#' @param invalid_at_boundary default \code{FALSE}, meaning invalid surrogates are generated
+#'   uniformly across the entire invalid region. If \code{TRUE}, generates invalid surrogates
+#'   at the boundary values defined by epsilon. This is the worst-case scenario for invalid
+#'   surrogates and thus is useful for checking the calibration of the method.
+#'
 #'
 #' @return A list with the following components:
 #' \describe{
@@ -60,18 +65,21 @@
 #' )
 #' dim(res$delta)       # 5 x 500
 #' head(res$mu.true)
-#' 
+#'
 #' @export
 simulate.multi.study.surrogates <- function(epsilon = 0.2,
                                             M = 5,
                                             sample_sizes = c(25, 50, 100, 150, 250),
                                             J = 500,
                                             prop_valid = 0.1,
-                                            u_tau_min = 0.01,   # interpreted as variance lower bound
-                                            u_tau_max = 0.1,    # interpreted as variance upper bound
+                                            u_tau_min = 0.01,
+                                            # interpreted as variance lower bound
+                                            u_tau_max = 0.1,
+                                            # interpreted as variance upper bound
                                             u_nu_min = 0.01,
                                             u_nu_max = 0.1,
-                                            prop_invalid_under = 0.5) {
+                                            prop_invalid_under = 0.5,
+                                            invalid_at_boundary = FALSE) {
   ## --- input checks
   if (prop_valid < 0 || prop_valid > 1) {
     stop("prop_valid must be between 0 and 1.")
@@ -119,11 +127,19 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
     s_j <- rbinom(J_invalid, size = 1, prob = prop_invalid_under)  # 1 => underestimates (positive mu)
     
     if (any(s_j == 0)) {
-      mu_j[invalid_idx[s_j == 0]] <- runif(sum(s_j == 0), min = -1, max = -epsilon)  # negative -> overestimates
+      if (invalid_at_boundary) {
+        mu_j[invalid_idx[s_j == 0]] = -epsilon
+      } else {
+        mu_j[invalid_idx[s_j == 0]] <- runif(sum(s_j == 0), min = -1, max = -epsilon)  # negative -> overestimates
+      }
     }
     
     if (any(s_j == 1)) {
-      mu_j[invalid_idx[s_j == 1]] <- runif(sum(s_j == 1), min = epsilon, max = 1)    # positive -> underestimates
+      if (invalid_at_boundary) {
+        mu_j[invalid_idx[s_j == 1]] = epsilon
+      } else {
+        mu_j[invalid_idx[s_j == 1]] <- runif(sum(s_j == 1), min = epsilon, max = 1)    # positive -> underestimates
+      }
     }
   }
   
@@ -133,7 +149,9 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
   
   for (j in seq_len(J)) {
     delta_true[, j] <- rnorm(n = M, mean = mu_j[j], sd = tau_sd_j[j])
-    delta_estimated[, j] <- rnorm(n = M, mean = delta_true[, j], sd = sqrt(sigma_m_j[, j]))
+    delta_estimated[, j] <- rnorm(n = M,
+                                  mean = delta_true[, j],
+                                  sd = sqrt(sigma_m_j[, j]))
   }
   
   ## --- assemble outputs
@@ -151,7 +169,8 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
     n = sample_sizes,
     hyp = hyp,
     mu.true = mu_j,
-    tau2.true = tau2_j
+    tau2.true = tau2_j,
+    invalid_at_boundary = invalid_at_boundary
   )
   
   return(res)

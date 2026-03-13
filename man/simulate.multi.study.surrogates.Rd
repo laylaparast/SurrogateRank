@@ -14,7 +14,8 @@
   u_tau_max = 0.1,
   u_nu_min = 0.01,
   u_nu_max = 0.1,
-  prop_invalid_under = 0.5
+  prop_invalid_under = 0.5,
+  invalid_at_boundary = FALSE
 )
 }
 \arguments{
@@ -45,6 +46,11 @@ component (\eqn{\nu_j}) used to scale within-study sampling error.}
 
 \item{prop_invalid_under}{Numeric, between 0 and 1. Probability that an invalid
 marker underestimates the treatment effect on Y.}
+
+\item{invalid_at_boundary}{default \code{FALSE}, meaning invalid surrogates are generated
+uniformly across the entire invalid region. If \code{TRUE}, generates invalid surrogates
+at the boundary values defined by epsilon. This is the worst-case scenario for invalid
+surrogates and thus is useful for checking the calibration of the method.}
 }
 \value{
 A list with the following components:
