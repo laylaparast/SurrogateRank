@@ -2,56 +2,92 @@
 % Please edit documentation in R/simulate.multi.study.surrogates.R
 \name{simulate.multi.study.surrogates}
 \alias{simulate.multi.study.surrogates}
-\title{Title}
+\title{Simulate multi-study surrogate marker trial-level effects}
 \usage{
 \method{simulate}{multi.study.surrogates}(
-  u_y_mean = 0.8,
-  u_y_sd = 0.1,
-  d_valid = -0.1,
-  d_invalid = -0.5,
-  u_s_sd_valid = 0.1,
-  u_s_sd_invalid = 0.1,
   epsilon = 0.2,
-  M = 10,
+  M = 5,
+  sample_sizes = c(25, 50, 100, 150, 250),
   J = 500,
-  prop_valid = 0.1
+  prop_valid = 0.1,
+  u_tau_min = 0.01,
+  u_tau_max = 0.1,
+  u_nu_min = 0.01,
+  u_nu_max = 0.1,
+  prop_invalid_under = 0.5
 )
 }
 \arguments{
-\item{u_y_mean}{Mean of treatment effects on primary endpoint, bounded between 0 and 1}
+\item{epsilon}{Numeric in (0,1). Defines the region of validity for the
+surrogate marker means. Markers with mean discrepancy within
+\code{[-epsilon, epsilon]} are valid; others are invalid.}
 
-\item{u_y_sd}{Standard deviation of treatment effects on primary endpoint}
+\item{M}{Integer. Number of trials (studies) to simulate. Must be > 1.}
 
-\item{d_valid}{Average distance of treatment effect on valid surrogates and on primary outcome within each trial.
-Must satisfy \code{|d_valid| <= epsilon}.}
+\item{sample_sizes}{Numeric vector of length \code{M}. Sample size for
+each trial. Used to compute within-study variances.}
 
-\item{d_invalid}{Average distance of treatment effect on invalid surrogates and on primary outcome within each trial.
-Must satisfy \code{|d_invalid| > epsilon}.}
+\item{J}{Integer. Total number of markers to simulate (valid + invalid).}
 
-\item{u_s_sd_valid}{Standard deviation of distance of treatment effect on valid surrogates and on primary outcome.}
+\item{prop_valid}{Numeric, between 0 and 1. Proportion of markers that are valid.}
 
-\item{u_s_sd_invalid}{Standard deviation of distance of treatment effect on invalid surrogates and on primary outcome.}
+\item{u_tau_min}{Numeric >= 0. Lower bound of marker-specific between-trial
+heterogeneity variance (\eqn{\tau_j^2}).}
 
-\item{epsilon}{Margin for definition of valid surrogates.}
+\item{u_tau_max}{Numeric >= u_tau_min. Upper bound of marker-specific
+between-trial heterogeneity variance (\eqn{\tau_j^2}).}
 
-\item{M}{Number of trials.}
+\item{u_nu_min}{Numeric > 0. Lower bound of marker-specific variance
+component (\eqn{\nu_j}) used to scale within-study sampling error.}
 
-\item{J}{Number of surrogate candidates.}
+\item{u_nu_max}{Numeric >= u_nu_min. Upper bound of marker-specific variance
+component (\eqn{\nu_j}) used to scale within-study sampling error.}
 
-\item{prop_valid}{Proportion of surrogate candidates which are valid.}
+\item{prop_invalid_under}{Numeric, between 0 and 1. Probability that an invalid
+marker underestimates the treatment effect on Y.}
 }
 \value{
-list containing elements \itemize{
-\item \code{uy} : numeric vector of length \code{M} containing treatment effects on primary endpoint across trials
-\item \code{us} : numeric matrix of dimension \code{M} times \code{J} containing treatment effects on each of \code{J} candidate markers.
-\item \code{hyp} : vector of length \code{J} containing the truth of surrogate validity. \code{null false} corresponds to valid surrogates
-whereas \code{null true} corresponds to invalid surrogates.
-\item \code{epsilon} : value of epsilon used to define surrogate validity.
+A list with the following components:
+\describe{
+\item{delta}{M x J matrix of observed trial-level discrepancies
+(\eqn{\hat{\delta}_{m,j}}) including sampling error.}
+\item{sd.delta}{M x J matrix of within-study standard deviations
+(\eqn{\sigma_{m,j}}).}
+\item{n}{Numeric vector of sample sizes for each trial.}
+\item{hyp}{Character vector of length J, "null true" for valid markers and
+"null false" for invalid markers.}
+\item{mu.true}{Numeric vector of true marker-level mean discrepancies
+(\eqn{\mu_{\delta,j}}).}
+\item{tau2.true}{Numeric vector of marker-specific between-trial
+heterogeneity variances (\eqn{\tau_j^2}).}
 }
 }
 \description{
-Title
+Generates simulated trial-level treatment effect discrepancies for multiple
+surrogate markers across multiple studies, including both valid and invalid
+surrogates. This function implements a hierarchical random-effects model:
+true trial-level effects are drawn from marker-specific means with
+between-trial heterogeneity, and observed trial-level effects include
+additional within-study sampling error.
+}
+\details{
+The function first draws marker-level parameters:
+\eqn{\mu_{\delta,j}} from the validity or invalidity region, \eqn{\tau_j^2}
+from a uniform distribution, and \eqn{\nu_j} from a uniform distribution.
+Then, for each trial, true trial-level effects are drawn as
+\eqn{\delta_{m,j}^{true} \sim N(\mu_{\delta,j}, \tau_j^2)}, and
+observed effects include independent within-study sampling error
+\eqn{\hat{\delta}_{m,j} \sim N(\delta_{m,j}^{true}, \nu_j / n_m)}.
 }
 \examples{
-example.data.highdim.multistudy = simulate.multi.study.surrogates(u_y_mean = 0.8, u_y_sd = 0.1, d_valid = -0.1, d_invalid = -0.5, u_s_sd_valid = 0.1, u_s_sd_invalid = 0.1, epsilon = 0.2, M = 10, J = 500, prop_valid = 0.1)
+res <- simulate.multi.study.surrogates(
+  epsilon = 0.2,
+  M = 5,
+  sample_sizes = c(25, 50, 100, 150, 250),
+  J = 500,
+  prop_valid = 0.1
+)
+dim(res$delta)       # 5 x 500
+head(res$mu.true)
+
 }

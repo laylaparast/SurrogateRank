@@ -1,127 +1,157 @@
-#' Title
+#' Simulate multi-study surrogate marker trial-level effects
 #'
-#' @param u_y_mean Mean of treatment effects on primary endpoint, bounded between 0 and 1
-#' @param u_y_sd Standard deviation of treatment effects on primary endpoint
-#' @param d_valid Average distance of treatment effect on valid surrogates and on primary outcome within each trial. 
-#' Must satisfy \code{|d_valid| <= epsilon}.
-#' @param d_invalid Average distance of treatment effect on invalid surrogates and on primary outcome within each trial.
-#' Must satisfy \code{|d_invalid| > epsilon}.
-#' @param u_s_sd_valid Standard deviation of distance of treatment effect on valid surrogates and on primary outcome.
-#' @param u_s_sd_invalid Standard deviation of distance of treatment effect on invalid surrogates and on primary outcome.
-#' @param epsilon Margin for definition of valid surrogates.
-#' @param M Number of trials.
-#' @param J Number of surrogate candidates.
-#' @param prop_valid Proportion of surrogate candidates which are valid.
+#' Generates simulated trial-level treatment effect discrepancies for multiple
+#' surrogate markers across multiple studies, including both valid and invalid
+#' surrogates. This function implements a hierarchical random-effects model:
+#' true trial-level effects are drawn from marker-specific means with
+#' between-trial heterogeneity, and observed trial-level effects include
+#' additional within-study sampling error.
 #'
-#' @returns list containing elements \itemize{
-#' \item \code{uy} : numeric vector of length \code{M} containing treatment effects on primary endpoint across trials
-#' \item \code{us} : numeric matrix of dimension \code{M} times \code{J} containing treatment effects on each of \code{J} candidate markers. 
-#' \item \code{hyp} : vector of length \code{J} containing the truth of surrogate validity. \code{null false} corresponds to valid surrogates
-#' whereas \code{null true} corresponds to invalid surrogates. 
-#' \item \code{epsilon} : value of epsilon used to define surrogate validity. 
+#' @param epsilon Numeric in (0,1). Defines the region of validity for the
+#'   surrogate marker means. Markers with mean discrepancy within
+#'   \code{[-epsilon, epsilon]} are valid; others are invalid.
+#' @param M Integer. Number of trials (studies) to simulate. Must be > 1.
+#' @param sample_sizes Numeric vector of length \code{M}. Sample size for
+#'   each trial. Used to compute within-study variances.
+#' @param J Integer. Total number of markers to simulate (valid + invalid).
+#' @param prop_valid Numeric, between 0 and 1. Proportion of markers that are valid.
+#' @param u_tau_min Numeric >= 0. Lower bound of marker-specific between-trial
+#'   heterogeneity variance (\eqn{\tau_j^2}).
+#' @param u_tau_max Numeric >= u_tau_min. Upper bound of marker-specific
+#'   between-trial heterogeneity variance (\eqn{\tau_j^2}).
+#' @param u_nu_min Numeric > 0. Lower bound of marker-specific variance
+#'   component (\eqn{\nu_j}) used to scale within-study sampling error.
+#' @param u_nu_max Numeric >= u_nu_min. Upper bound of marker-specific variance
+#'   component (\eqn{\nu_j}) used to scale within-study sampling error.
+#' @param prop_invalid_under Numeric, between 0 and 1. Probability that an invalid
+#'   marker underestimates the treatment effect on Y.
+#'
+#' @return A list with the following components:
+#' \describe{
+#'   \item{delta}{M x J matrix of observed trial-level discrepancies
+#'        (\eqn{\hat{\delta}_{m,j}}) including sampling error.}
+#'   \item{sd.delta}{M x J matrix of within-study standard deviations
+#'        (\eqn{\sigma_{m,j}}).}
+#'   \item{n}{Numeric vector of sample sizes for each trial.}
+#'   \item{hyp}{Character vector of length J, "null true" for valid markers and
+#'        "null false" for invalid markers.}
+#'   \item{mu.true}{Numeric vector of true marker-level mean discrepancies
+#'        (\eqn{\mu_{\delta,j}}).}
+#'   \item{tau2.true}{Numeric vector of marker-specific between-trial
+#'        heterogeneity variances (\eqn{\tau_j^2}).}
 #' }
-#' @export
 #'
-#' @examples example.data.highdim.multistudy = simulate.multi.study.surrogates(u_y_mean = 0.8, u_y_sd = 0.1, d_valid = -0.1, d_invalid = -0.5, u_s_sd_valid = 0.1, u_s_sd_invalid = 0.1, epsilon = 0.2, M = 10, J = 500, prop_valid = 0.1)
-simulate.multi.study.surrogates <- function(u_y_mean = 0.8,
-                                            u_y_sd = 0.1,
-                                            d_valid = -0.1,
-                                            d_invalid = -0.5,
-                                            u_s_sd_valid = 0.1,
-                                            u_s_sd_invalid = 0.1,
-                                            epsilon = 0.2,
-                                            M = 10,
+#' @details
+#' The function first draws marker-level parameters:
+#' \eqn{\mu_{\delta,j}} from the validity or invalidity region, \eqn{\tau_j^2}
+#' from a uniform distribution, and \eqn{\nu_j} from a uniform distribution.
+#' Then, for each trial, true trial-level effects are drawn as
+#' \eqn{\delta_{m,j}^{true} \sim N(\mu_{\delta,j}, \tau_j^2)}, and
+#' observed effects include independent within-study sampling error
+#' \eqn{\hat{\delta}_{m,j} \sim N(\delta_{m,j}^{true}, \nu_j / n_m)}.
+#'
+#' @examples
+#' res <- simulate.multi.study.surrogates(
+#'   epsilon = 0.2,
+#'   M = 5,
+#'   sample_sizes = c(25, 50, 100, 150, 250),
+#'   J = 500,
+#'   prop_valid = 0.1
+#' )
+#' dim(res$delta)       # 5 x 500
+#' head(res$mu.true)
+#' 
+#' @export
+simulate.multi.study.surrogates <- function(epsilon = 0.2,
+                                            M = 5,
+                                            sample_sizes = c(25, 50, 100, 150, 250),
                                             J = 500,
-                                            prop_valid = 0.1) {
-  
-  # Checks
-  if (u_y_mean > 1 | u_y_mean < 0){
-    stop(
-      "u_y_mean must be between 0 and 1." 
-    )
+                                            prop_valid = 0.1,
+                                            u_tau_min = 0.01,   # interpreted as variance lower bound
+                                            u_tau_max = 0.1,    # interpreted as variance upper bound
+                                            u_nu_min = 0.01,
+                                            u_nu_max = 0.1,
+                                            prop_invalid_under = 0.5) {
+  ## --- input checks
+  if (prop_valid < 0 || prop_valid > 1) {
+    stop("prop_valid must be between 0 and 1.")
   }
   
-  if (prop_valid > 0) {
-    if (d_valid > 1 | d_valid < -1) {
-      stop("d_valid  must be between -1 and 1.")
-    }
+  if (epsilon <= 0 || epsilon >= 1) {
+    stop("epsilon should be in (0,1).")
   }
   
-  if (d_invalid > 1 | d_invalid < -1){
-    stop(
-      "d_invalid must be between -1 and 1." 
-    )
+  if (M <= 1) {
+    stop("Number of trials M must be > 1.")
   }
   
-  if (prop_valid > 1 | prop_valid < 0){
-    stop(
-      "prop_valid must be between 0 and 1." 
-    )
+  if (length(sample_sizes) != M) {
+    stop("sample_sizes must be length M.")
   }
   
-  if (epsilon > 1 | epsilon < 0){
-    stop(
-      "epsilon must be between 0 and 1." 
-    )
+  if (J < 1) {
+    stop("J must be >= 1.")
   }
   
-  if (M <= 1){
-    stop(
-      "The number of trials M must be greater than 1." 
-    )
-  }
-  
-  # Valid surrogate condition
-  if (prop_valid > 0 && abs(d_valid) > epsilon) {
-    stop(
-      "You tried to generate some proportion of valid surrogates
-         but |d_valid| is greater than epsilon.
-         Either reduce d_valid or specify prop_valid = 0 to generate only invalid surrogates."
-    )
-  }
-  
-  # Invalid surrogate condition
-  if (prop_valid < 1 && abs(d_invalid) <= epsilon) {
-    stop(
-      "You tried to generate some proportion of invalid surrogates
-         but |d_invalid| is less than or equal to epsilon.
-         Either increase d_invalid or specify prop_valid = 1 to generate only valid surrogates."
-    )
-  }
-  
-  # Number of valid / invalid surrogates
+  ## --- how many valid / invalid markers
   J_valid <- round(prop_valid * J)
   J_invalid <- J - J_valid
   
-  # Generate treatment effects for Y
-  mu_nu <- qlogis(u_y_mean)
-  nu_m <- rnorm(M, mean = mu_nu, sd = u_y_sd)
-  u_y_m <- plogis(nu_m)
+  ## --- draw marker-specific heterogeneity variances (tau^2) and convert to sd
+  tau2_j <- runif(J, min = u_tau_min, max = u_tau_max)   # tau^2 for each marker
+  tau_sd_j <- sqrt(tau2_j)                               # sd for rnorm
   
-  # Helper function for bounding
-  bound01 <- function(x)
-    pmin(pmax(x, 0), 1)
+  ## --- draw marker-specific noise components nu_j
+  nu_j <- runif(J, min = u_nu_min, max = u_nu_max)
   
-  # Simulate valid surrogates
-  us_valid <- replicate(J_valid, bound01(u_y_m + rnorm(M, d_valid, u_s_sd_valid)))
+  ## --- create within-study variances matrix: sigma_{m,j}^2 = nu_j / n_m
+  inv_n <- 1 / sample_sizes
+  sigma_m_j <- outer(inv_n, nu_j, FUN = "*")   # M x J matrix
   
-  # Simulate invalid surrogates
-  us_invalid <- replicate(J_invalid, bound01(u_y_m + rnorm(M, d_invalid, u_s_sd_invalid)))
+  ## --- assign mu_delta for markers (first valid then invalid)
+  mu_j <- numeric(J)
+  if (J_valid > 0) {
+    mu_j[1:J_valid] <- runif(J_valid, min = -epsilon, max = epsilon)
+  }
   
-  # Combine
-  us_all <- cbind(us_valid, us_invalid)
+  if (J_invalid > 0) {
+    invalid_idx <- (J_valid + 1):J
+    s_j <- rbinom(J_invalid, size = 1, prob = prop_invalid_under)  # 1 => underestimates (positive mu)
+    
+    if (any(s_j == 0)) {
+      mu_j[invalid_idx[s_j == 0]] <- runif(sum(s_j == 0), min = -1, max = -epsilon)  # negative -> overestimates
+    }
+    
+    if (any(s_j == 1)) {
+      mu_j[invalid_idx[s_j == 1]] <- runif(sum(s_j == 1), min = epsilon, max = 1)    # positive -> underestimates
+    }
+  }
   
-  colnames(us_all) <- paste0("S", 1:J)
+  ## --- simulate true delta and observed delta
+  delta_true <- matrix(NA_real_, nrow = M, ncol = J)
+  delta_estimated <- matrix(NA_real_, nrow = M, ncol = J)
   
-  # Validity labels
-  valid_label <- c(rep("null false", J_valid), rep("null true", J_invalid))
+  for (j in seq_len(J)) {
+    delta_true[, j] <- rnorm(n = M, mean = mu_j[j], sd = tau_sd_j[j])
+    delta_estimated[, j] <- rnorm(n = M, mean = delta_true[, j], sd = sqrt(sigma_m_j[, j]))
+  }
   
-  # Output
-  res = list(
-    uy = u_y_m,
-    us = us_all,
-    hyp = valid_label,
-    epsilon = epsilon
+  ## --- assemble outputs
+  colnames(delta_estimated) <- paste0("S", seq_len(J))
+  rownames(delta_estimated) <- paste0("Trial ", seq_len(M))
+  colnames(sigma_m_j) <- paste0("S", seq_len(J))
+  rownames(sigma_m_j) <- paste0("Trial ", seq_len(M))
+  
+  hyp <- c(rep("null false", J_valid), rep("null true", J_invalid))
+  sd_delta <- sqrt(sigma_m_j)
+  
+  res <- list(
+    delta = delta_estimated,
+    sd.delta = sd_delta,
+    n = sample_sizes,
+    hyp = hyp,
+    mu.true = mu_j,
+    tau2.true = tau2_j
   )
   
   return(res)
