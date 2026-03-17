@@ -4,26 +4,24 @@
 #' @param sd.delta numeric vector of standard error of delta values per study
 #' @param epsilon numeric non-inferiority margin for testing cross-study validity
 #' @param alpha numeric significance level of test. Note : using the two-one-sided test (\code{alternative = "two.sided"})
-#'   produces a (1-2\code{alpha})*100% confidence interval, so you may consider halving your 
+#'   produces a (1-2\code{alpha})*100% confidence interval, so you may consider halving your
 #'   desired \code{alpha} if using this option.
 #' @param alternative character giving the alternative hypothesis type for testing the summary effect.
 #'   One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
-#' @param sample.sizes numeric vector of sample sizes. These should be 
-#'   provided in case the estimated standard error for a given study is exactly 0. In order to compute 
-#'   estimates of cochrane's Q and I-squared, a conservative bound for the variance is used. This bound
-#'   is rooted in U-statistic theory and is taken by ignoring the covariance term when estmating the variance 
-#'   for delta. 
 #' @param tol numeric convergence tolerance for finding a root of the score equation
 #' @param verbose logical flag indicating whether messages should be printed, defaults to \code{FALSE}
+#' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to 
+#' variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
+#'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing. 
 #'
 #' @return a list with elements \itemize{
 #'   \item \code{n.studies} : numeric, number of studies considered
 #'   \item \code{tau2} : numeric, estimated tau-squared (between-study heterogeneity)
 #'   \item \code{mu.delta} : numeric, estimated mean of distribution of delta
 #'   \item \code{se.delta} : numeric, standard error of delta summary estimate with Hartung-Knapp adjustment
-#'   \item \code{ci.delta.upper} : numeric, upper confidence interval for mean of delta. 
-#'          Note : if using the non-inferiority test (i.e. \code{alternative = "less"}), 
+#'   \item \code{ci.delta.upper} : numeric, upper confidence interval for mean of delta.
+#'          Note : if using the non-inferiority test (i.e. \code{alternative = "less"}),
 #'          these bounds correspond to a (1-\code{alpha})*100% confidence interval,
 #'          whereas the two-one-sided test (i.e. \code{alternative = "two.sided"})
 #'          corresponds to a (1-2\code{alpha})*100% interval.
@@ -52,9 +50,9 @@ delta.reml.meta <- function(delta = NULL,
                             epsilon = NULL,
                             alpha = 0.05,
                             alternative = "two.sided",
-                            sample.sizes = NULL,
                             tol = 1e-10,
-                            verbose = FALSE) {
+                            verbose = FALSE,
+                            test = "knha") {
   # Validity checks
   n.studies = length(delta)
   
@@ -62,7 +60,7 @@ delta.reml.meta <- function(delta = NULL,
     stop("sd.delta not the same length as delta")
   }
   
-  if (is.null(epsilon)){
+  if (is.null(epsilon)) {
     stop("epsilon (equivalence margin) must be supplied")
   }
   
@@ -70,12 +68,6 @@ delta.reml.meta <- function(delta = NULL,
   if (any(sd.delta == 0)) {
     delta = delta[-which(sd.delta == 0)]
     sd.delta = sd.delta[-which(sd.delta == 0)]
-    # if (verbose) {
-    #   message(
-    #     "Note : one or multiple studies have exactly 0 estimated standard error.
-    #           Removing this study from the analysis."
-    #   )
-    # }
   }
   
   # Reset the value of n.studies
@@ -112,7 +104,7 @@ delta.reml.meta <- function(delta = NULL,
   s2 <- var(delta)
   upper <- max(abs(s2 - mean(vi)), s2, max(vi), 1e-6)
   upper <- abs(upper) * 10 + 1e-6
-  if (upper <= 0){
+  if (upper <= 0) {
     upper <- 1e-6
   }
   
@@ -138,7 +130,7 @@ delta.reml.meta <- function(delta = NULL,
       converged <- TRUE
     } else {
       converged <- FALSE
-      if (verbose){
+      if (verbose) {
         message("uniroot failed; falling back to optimize on restricted log-likelihood")
       }
     }
@@ -157,7 +149,7 @@ delta.reml.meta <- function(delta = NULL,
   }
   
   # -------------------------
-  # pooled estimates & Hartung-Knapp standard error
+  # pooled estimates
   # -------------------------
   w.tau <- 1 / (vi + tau2.hat)
   mu.delta.hat <- sum(w.tau * delta) / sum(w.tau)
@@ -173,41 +165,50 @@ delta.reml.meta <- function(delta = NULL,
   q <- max(0, q)
   se.HK <- sqrt(q) * sqrt(var.conv)
   
-  # HK CI (uses t_{n.studies-1})
-  tcrit <- qt(1 - alpha, df = n.studies - 1)
-  ci.HK <- c(mu.delta.hat - tcrit * se.HK, mu.delta.hat + tcrit * se.HK)
-  
   # -------------------------
-  # Two-one-sided test (TOST) using HK SE
+  # CI, SE, and tests (branch on test argument)
   # -------------------------
-  if (alternative == "two.sided") {
-    T.L <- (mu.delta.hat + epsilon) / se.HK
-    T.U <- (mu.delta.hat - epsilon) / se.HK
-    p.lower <- 1 - pt(T.L, df = n.studies - 1)   # p-value for H0L: mu.delta <= -epsilon
-    p.upper <- pt(T.U, df = n.studies - 1)       # p-value for H0U: mu.delta >= +epsilon
-    p.final <- max(p.lower, p.upper)
+  if (test == "z") {
+    se.final <- se.conv
+    zcrit <- qnorm(1 - alpha)
+    ci.final <- c(mu.delta.hat - zcrit * se.final, mu.delta.hat + zcrit * se.final)
+    
+    if (alternative == "two.sided") {
+      T.L <- (mu.delta.hat + epsilon) / se.final
+      T.U <- (mu.delta.hat - epsilon) / se.final
+      p.lower <- 1 - pnorm(T.L)
+      p.upper <- pnorm(T.U)
+      p.final <- max(p.lower, p.upper)
+    } else {
+      T.U <- (mu.delta.hat - epsilon) / se.final
+      p.final <- pnorm(T.U)
+      p.lower <- NULL
+      p.upper <- NULL
+    }
   } else {
-    T.U <- (mu.delta.hat - epsilon) / se.HK
-    p.final <- pt(T.U, df = n.studies - 1)
-    p.lower = NULL
-    p.upper = NULL
+    # Default: Hartung-Knapp, t-distribution
+    se.final <- se.HK
+    tcrit <- qt(1 - alpha, df = n.studies - 1)
+    ci.final <- c(mu.delta.hat - tcrit * se.final, mu.delta.hat + tcrit * se.final)
+    
+    if (alternative == "two.sided") {
+      T.L <- (mu.delta.hat + epsilon) / se.final
+      T.U <- (mu.delta.hat - epsilon) / se.final
+      p.lower <- 1 - pt(T.L, df = n.studies - 1)
+      p.upper <- pt(T.U, df = n.studies - 1)
+      p.final <- max(p.lower, p.upper)
+    } else {
+      T.U <- (mu.delta.hat - epsilon) / se.final
+      p.final <- pt(T.U, df = n.studies - 1)
+      p.lower <- NULL
+      p.upper <- NULL
+    }
   }
-  
   
   # -------------------------
   # Cochran's Q and I^2
   # -------------------------
   # Fixed-effect weights use vi only
-  
-  # In the case where variance exactly 0, replace this with a conservative estimate based on asymptotic U-statistic theory
-  # when ignoring the covariance term
-  # The variance of U-statistics is derived in the RISE paper
-  
-  if (any(vi == 0)){
-    variance.bound = 1/(2*sample.sizes)
-    
-    vi[vi == 0] = variance.bound[vi == 0]
-  }
   
   w0 <- 1 / vi
   w0.sum <- sum(w0)
@@ -224,16 +225,20 @@ delta.reml.meta <- function(delta = NULL,
   # -------------------------
   # Prediction intervals
   # -------------------------
-  # predictive standard error: HK variance of the pooled mean + between-study variance
-  var_pred <- (se.HK^2) + tau2.hat
+  # predictive standard error: variance of pooled mean + between-study variance
+  var_pred <- (se.final^2) + tau2.hat
   se.pred <- sqrt(var_pred)
   
-  # degrees of freedom for PI: M-2 
-  df_pi <- n.studies - 2
-  tcrit_pi <- qt(1 - alpha / 2, df = df_pi)
-  
-  pi.lower <- mu.delta.hat - tcrit_pi * se.pred
-  pi.upper <- mu.delta.hat + tcrit_pi * se.pred
+  if (test == "z") {
+    zcrit_pi <- qnorm(1 - alpha / 2)
+    pi.lower <- mu.delta.hat - zcrit_pi * se.pred
+    pi.upper <- mu.delta.hat + zcrit_pi * se.pred
+  } else {
+    df_pi <- n.studies - 1
+    tcrit_pi <- qt(1 - alpha / 2, df = df_pi)
+    pi.lower <- mu.delta.hat - tcrit_pi * se.pred
+    pi.upper <- mu.delta.hat + tcrit_pi * se.pred
+  }
   
   # -------------------------
   # prepare output
@@ -242,9 +247,9 @@ delta.reml.meta <- function(delta = NULL,
     n.studies = n.studies,
     tau2 = tau2.hat,
     mu.delta = mu.delta.hat,
-    se.delta = se.HK,
-    ci.delta.upper = ci.HK[2],
-    ci.delta.lower = ci.HK[1],
+    se.delta = se.final,
+    ci.delta.upper = ci.final[2],
+    ci.delta.lower = ci.final[1],
     pi.lower = pi.lower,
     pi.upper = pi.upper,
     p.lower = p.lower,

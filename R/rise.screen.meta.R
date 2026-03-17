@@ -34,6 +34,9 @@
 #' @param alternative character giving the alternative hypothesis type. One of
 #'   \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
+#' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to 
+#' variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
+#'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing. 
 #' @param paired.all logical flag giving if the data is independent or paired. If \code{FALSE} (default),
 #'   samples are assumed independent. If \code{TRUE}, all samples are assumed to be from a paired design.
 #'   The pairs are specified by matching the rows of \code{yone} and \code{sone} to the rows of
@@ -113,6 +116,7 @@ rise.screen.meta = function(yone,
                             p.correction = "BH",
                             n.cores = 1,
                             alternative = "two.sided",
+                            test = "knha",
                             paired.all = FALSE,
                             paired.studies = NULL,
                             return.all.screen = TRUE,
@@ -340,21 +344,6 @@ rise.screen.meta = function(yone,
     group_by(marker) %>%
     summarise(n_studies = n(), .groups = "drop")
   
-  if (any(df.nstudies.marker$n_studies == 2)) {
-    ngenes = df.nstudies.marker %>%
-      filter(n_studies == 2) %>%
-      nrow()
-    
-    message(
-      paste0(
-        "Note: ",
-        ngenes,
-        " markers have only 2 studies available for estimation.",
-        " Prediction intervals will not be available for these markers."
-      )
-    )
-  }
-  
   if (any(df.nstudies.marker$n_studies == 1)) {
     ngenes = df.nstudies.marker %>%
       filter(n_studies == 1) %>%
@@ -370,47 +359,39 @@ rise.screen.meta = function(yone,
     )
   }
   
-  for (m in all.markers) {
-    # Extract cross-study screening results for a marker
-    df.summary.marker = rise.screen.results.allstudies.df %>%
-      filter(marker == m)
-    
-    if (nrow(df.summary.marker) == 1) {
-      next
-    }
-    
-    # Compute CCC
-    x <- df.summary.marker$u.y
-    y <- df.summary.marker$u.s
+  # Pre-split data by marker once to avoid repeated filtering in the loop
+  marker.data.list <- split(rise.screen.results.allstudies.df, rise.screen.results.allstudies.df$marker)
+  markers.to.run  <- intersect(all.markers, names(marker.data.list))
+  markers.to.run  <- markers.to.run[sapply(marker.data.list[markers.to.run], nrow) > 1]
+
+  run.one.marker <- function(df.summary.marker) {
+    x   <- df.summary.marker$u.y
+    y   <- df.summary.marker$u.s
     ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
-    
-    # Extract the values of delta
-    delta.marker = df.summary.marker %>%
-      pull(delta)
-    
-    # Extract the values of the standard deviation of delta
-    sd.delta.marker = df.summary.marker %>%
-      pull(sd)
-    
-    sample.sizes.marker = df.summary.marker %>%
-      mutate(n.indiv = ifelse(study %in% paired.studies, n / 2, n)) %>%
-      pull(n.indiv)
-    
-    # Call the restricted maximum likelihood random-effects meta-analysis function
-    delta.reml.marker[[m]] = delta.reml.meta(
-      delta = delta.marker,
-      sd.delta = sd.delta.marker,
-      epsilon = epsilon.meta,
-      alpha = alpha,
-      alternative = alternative,
-      sample.sizes = sample.sizes.marker
+
+    delta.marker        <- df.summary.marker$delta
+    sd.delta.marker     <- df.summary.marker$sd
+
+    res <- delta.reml.meta(
+      delta        = delta.marker,
+      sd.delta     = sd.delta.marker,
+      epsilon      = epsilon.meta,
+      alpha        = alpha,
+      alternative  = alternative,
+      test = test
     )[["results"]]
-    
-    # Initialise weight values
-    delta.reml.marker[[m]]$weights.tau <- NULL
-    delta.reml.marker[[m]]$weights.tau.relative <- NULL
-    delta.reml.marker[[m]]$ccc = ccc
+
+    res$weights.tau          <- NULL
+    res$weights.tau.relative <- NULL
+    res$ccc                  <- ccc
+    res
   }
+
+  delta.reml.marker <- parallel::mclapply(
+    marker.data.list[markers.to.run],
+    run.one.marker,
+    mc.cores = n.cores
+  )
   
   # Bind per-marker results into a data frame
   delta.reml.df = bind_rows(delta.reml.marker, .id = "marker")
@@ -626,11 +607,6 @@ rise.screen.meta = function(yone,
   sd.delta.gamma = df.summary.marker %>%
     pull(sd.delta)
   
-  # Extract sample sizes
-  sample.sizes.marker = df.summary.marker %>%
-    mutate(n.indiv = ifelse(study %in% paired.studies, n / 2, n)) %>%
-    pull(n.indiv)
-  
   # Random effects meta analysis
   delta.reml.gamma = delta.reml.meta(
     delta.gamma,
@@ -638,7 +614,7 @@ rise.screen.meta = function(yone,
     epsilon = epsilon.meta,
     alpha = alpha,
     alternative = alternative,
-    sample.sizes = sample.sizes.marker
+    test = test
   )[["results"]]
   
   study.weights = data.frame(delta.reml.gamma$weights.tau.relative)

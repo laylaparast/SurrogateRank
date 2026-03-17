@@ -20,6 +20,7 @@ rise.evaluate.meta(
   p.correction = "BH",
   n.cores = 1,
   alternative = "two.sided",
+  test = "knha",
   paired.all = FALSE,
   paired.studies = NULL,
   evaluate.weights = TRUE,
@@ -74,6 +75,10 @@ improve computational time through the \code{pbmcapply()} function. Defaults to 
 \item{alternative}{character giving the alternative hypothesis type. One of
 \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 corresponds to a two one-sided test procedure. Default is "two.sided".}
+
+\item{test}{character giving the type of test to be performed. The default is \code{knha}, corresponding to
+variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
+whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing.}
 
 \item{paired.all}{logical flag giving if the data is independent or paired. If \code{FALSE} (default),
 samples are assumed independent. If \code{TRUE}, all samples are assumed to be from a paired design.

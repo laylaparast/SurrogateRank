@@ -29,6 +29,9 @@
 #' @param alternative character giving the alternative hypothesis type. One of
 #'   \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
+#' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to 
+#' variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
+#'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing. 
 #' @param paired.all logical flag giving if the data is independent or paired. If \code{FALSE} (default),
 #'   samples are assumed independent. If \code{TRUE}, all samples are assumed to be from a paired design.
 #'   The pairs are specified by matching the rows of \code{yone} and \code{sone} to the rows of
@@ -100,6 +103,7 @@ rise.evaluate.meta = function(yone,
                               p.correction = "BH",
                               n.cores = 1,
                               alternative = "two.sided",
+                              test = "knha",
                               paired.all = FALSE,
                               paired.studies = NULL,
                               evaluate.weights = TRUE,
@@ -314,10 +318,6 @@ rise.evaluate.meta = function(yone,
   sd.delta.marker = evaluation.metrics.study %>%
     pull(sd)
   
-  sample.sizes.marker = evaluation.metrics.study %>%
-    mutate(n.indiv = ifelse(study %in% paired.studies, n / 2, n)) %>%
-    pull(n.indiv)
-  
   if (nrow(evaluation.metrics.study) == 2) {
     message(
       paste0(
@@ -353,7 +353,7 @@ rise.evaluate.meta = function(yone,
     epsilon = epsilon.meta,
     alpha = alpha,
     alternative = alternative,
-    sample.sizes = sample.sizes.marker
+    test = test
   )[["results"]]
   
   # Save the study weights in one of the results dataframes

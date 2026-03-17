@@ -29,6 +29,8 @@
 #'   uniformly across the entire invalid region. If \code{TRUE}, generates invalid surrogates
 #'   at the boundary values defined by epsilon. This is the worst-case scenario for invalid
 #'   surrogates and thus is useful for checking the calibration of the method.
+#' @param valid_mean_discrete vector of discrete numeric values to sample true
+#' means of valid surrogates at. These values must be smaller in absolute value than epsilon.
 #'
 #'
 #' @return A list with the following components:
@@ -79,7 +81,8 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
                                             u_nu_min = 0.01,
                                             u_nu_max = 0.1,
                                             prop_invalid_under = 0.5,
-                                            invalid_at_boundary = FALSE) {
+                                            invalid_at_boundary = FALSE,
+                                            valid_mean_discrete = NULL) {
   ## --- input checks
   if (prop_valid < 0 || prop_valid > 1) {
     stop("prop_valid must be between 0 and 1.")
@@ -101,6 +104,12 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
     stop("J must be >= 1.")
   }
   
+  if (!is.null(valid_mean_discrete)) {
+    if (any(abs(valid_mean_discrete) >= epsilon)) {
+      stop("All values in valid_mean_discrete must be smaller in absolute value than epsilon.")
+    }
+  }
+  
   ## --- how many valid / invalid markers
   J_valid <- round(prop_valid * J)
   J_invalid <- J - J_valid
@@ -119,7 +128,11 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
   ## --- assign mu_delta for markers (first valid then invalid)
   mu_j <- numeric(J)
   if (J_valid > 0) {
-    mu_j[1:J_valid] <- runif(J_valid, min = -epsilon, max = epsilon)
+    if (is.null(valid_mean_discrete)) {
+      mu_j[1:J_valid] <- runif(J_valid, min = -epsilon, max = epsilon)
+    } else {
+      mu_j[1:J_valid] <- sample(valid_mean_discrete, J_valid, replace = TRUE)
+    }
   }
   
   if (J_invalid > 0) {

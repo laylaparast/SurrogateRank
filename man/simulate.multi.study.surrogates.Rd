@@ -15,7 +15,8 @@
   u_nu_min = 0.01,
   u_nu_max = 0.1,
   prop_invalid_under = 0.5,
-  invalid_at_boundary = FALSE
+  invalid_at_boundary = FALSE,
+  valid_mean_discrete = NULL
 )
 }
 \arguments{
@@ -51,6 +52,9 @@ marker underestimates the treatment effect on Y.}
 uniformly across the entire invalid region. If \code{TRUE}, generates invalid surrogates
 at the boundary values defined by epsilon. This is the worst-case scenario for invalid
 surrogates and thus is useful for checking the calibration of the method.}
+
+\item{valid_mean_discrete}{vector of discrete numeric values to sample true
+means of valid surrogates at. These values must be smaller in absolute value than epsilon.}
 }
 \value{
 A list with the following components:
