@@ -29,7 +29,8 @@ rise.screen.meta(
   return.forest.plot = TRUE,
   return.fit.plot = TRUE,
   show.pooled.effect = TRUE,
-  return.study.similarity.plot = TRUE
+  return.study.similarity.plot = TRUE,
+  return.evaluate.results = TRUE
 )
 }
 \arguments{
@@ -114,6 +115,9 @@ estimate. Otherwise, it will just show the individual trial estimates.}
 
 \item{return.study.similarity.plot}{logical flag. If \code{TRUE} (default), will return two plots showing the similarity
 between study-wise marker signatures (i.e., the application of RISE to each study individually, with p-value correction within-study).}
+
+\item{return.evaluate.results}{logical flag. If \code{TRUE} (default), returns results for combined marker gamma, evaluated on the same
+data. Can be useful to set this as \code{FALSE} to save computational time if this is not of interest.}
 }
 \value{
 a list with elements \itemize{

@@ -64,6 +64,8 @@
 #' estimate. Otherwise, it will just show the individual trial estimates.
 #' @param return.study.similarity.plot logical flag. If \code{TRUE} (default), will return two plots showing the similarity
 #' between study-wise marker signatures (i.e., the application of RISE to each study individually, with p-value correction within-study).
+#' @param return.evaluate.results logical flag. If \code{TRUE} (default), returns results for combined marker gamma, evaluated on the same
+#' data. Can be useful to set this as \code{FALSE} to save computational time if this is not of interest.
 #'
 #' @return a list with elements \itemize{
 #'   \item \code{screening.metrics.study} : dataframe of per-study results from RISE screening.
@@ -120,7 +122,8 @@ rise.screen.meta = function(yone,
                             return.forest.plot = TRUE,
                             return.fit.plot = TRUE,
                             show.pooled.effect = TRUE,
-                            return.study.similarity.plot = TRUE) {
+                            return.study.similarity.plot = TRUE,
+                            return.evaluate.results = TRUE) {
   # DATA FORMATTING #
   ## Convert dataframes to numeric matrices
   if (is.data.frame(sone) | is.data.frame(szero)) {
@@ -333,10 +336,48 @@ rise.screen.meta = function(yone,
       filter(sd != 0)
   }
   
+  df.nstudies.marker = rise.screen.results.allstudies.df %>%
+    group_by(marker) %>%
+    summarise(n_studies = n(), .groups = "drop")
+  
+  if (any(df.nstudies.marker$n_studies == 2)) {
+    ngenes = df.nstudies.marker %>%
+      filter(n_studies == 2) %>%
+      nrow()
+    
+    message(
+      paste0(
+        "Note: ",
+        ngenes,
+        " markers have only 2 studies available for estimation.",
+        " Prediction intervals will not be available for these markers."
+      )
+    )
+  }
+  
+  if (any(df.nstudies.marker$n_studies == 1)) {
+    ngenes = df.nstudies.marker %>%
+      filter(n_studies == 1) %>%
+      nrow()
+    
+    message(
+      paste0(
+        "Note: ",
+        ngenes,
+        " markers have only 1 studies available for estimation.",
+        " These markers will be skipped in the meta-analysis."
+      )
+    )
+  }
+  
   for (m in all.markers) {
     # Extract cross-study screening results for a marker
     df.summary.marker = rise.screen.results.allstudies.df %>%
       filter(marker == m)
+    
+    if (nrow(df.summary.marker) == 1) {
+      next
+    }
     
     # Compute CCC
     x <- df.summary.marker$u.y
@@ -357,8 +398,8 @@ rise.screen.meta = function(yone,
     
     # Call the restricted maximum likelihood random-effects meta-analysis function
     delta.reml.marker[[m]] = delta.reml.meta(
-      delta.marker,
-      sd.delta.marker,
+      delta = delta.marker,
+      sd.delta = sd.delta.marker,
       epsilon = epsilon.meta,
       alpha = alpha,
       alternative = alternative,
@@ -472,6 +513,18 @@ rise.screen.meta = function(yone,
   # ensure order matches sone/szero column order
   stopifnot(all(colnames(sone.significant) %in% names(weights.vec)))
   weights.vec <- weights.vec[colnames(sone.significant)]  # re-order to match columns
+  
+  if (return.evaluate.results == FALSE) {
+    return(
+      list(
+        "screening.metrics.study" = rise.screen.results.allstudies.df,
+        "screening.metrics.meta" = delta.reml.df,
+        "significant.markers" = significant.markers,
+        "screening.weights" = weights.significant,
+        "gamma.s.plot" = NULL
+      )
+    )
+  }
   
   # Weighted combination of significant markers, called gamma
   gamma.one  <- as.numeric(as.matrix(sone.significant) %*% weights.vec)
@@ -640,13 +693,13 @@ rise.screen.meta = function(yone,
     
     n_vals <- gamma.results.allstudies.df$n
     
-    round_down_10 <- function(x){
+    round_down_10 <- function(x) {
       floor(x / 10) * 10
     }
-    round_up_10   <- function(x){
+    round_up_10   <- function(x) {
       ceiling(x / 10) * 10
     }
-    round_up_50   <- function(x){
+    round_up_50   <- function(x) {
       ceiling(x / 50) * 50
     }
     
@@ -783,8 +836,8 @@ rise.screen.meta = function(yone,
     if (show.pooled.effect) {
       pi.row <- summary.row %>%
         mutate(
-          study = paste0(100*(1-alpha), "% Prediction interval"),
-          study.label = paste0(100*(1-alpha), "% Prediction interval"),
+          study = paste0(100 * (1 - alpha), "% Prediction interval"),
+          study.label = paste0(100 * (1 - alpha), "% Prediction interval"),
           ci.delta.lower = NA_real_,
           ci.delta.upper = NA_real_,
           p = NA_real_,
@@ -813,10 +866,16 @@ rise.screen.meta = function(yone,
     diamond.df <- data.frame(x = numeric(0), y = numeric(0))
     if (any(plot.df$is.summary)) {
       s <- plot.df %>% filter(is.summary) %>% slice(1)
-      if (!is.na(s$summary.ci.lower) && !is.na(s$summary.ci.upper)) {
+      if (!is.na(s$summary.ci.lower) &&
+          !is.na(s$summary.ci.upper)) {
         h <- 0.1   # reduced height (was 0.25)
         diamond.df <- data.frame(
-          x = c(s$delta.estimate, s$summary.ci.upper, s$delta.estimate, s$summary.ci.lower),
+          x = c(
+            s$delta.estimate,
+            s$summary.ci.upper,
+            s$delta.estimate,
+            s$summary.ci.lower
+          ),
           y = c(s$y + h, s$y, s$y - h, s$y)
         )
       }
@@ -833,7 +892,7 @@ rise.screen.meta = function(yone,
     
     # Plot parameters
     base.text.size <- 14
-    y.min <- if (show.pooled.effect){
+    y.min <- if (show.pooled.effect) {
       -1.5
     } else {
       0
@@ -882,7 +941,10 @@ rise.screen.meta = function(yone,
         orientation = "y"
       ) +
       geom_point(
-        data = filter(plot.df, !is.summary & study != paste0(100*(1-alpha), "% Prediction interval")),
+        data = filter(
+          plot.df,!is.summary &
+            study != paste0(100 * (1 - alpha), "% Prediction interval")
+        ),
         shape = 16,
         size = 3.5
       ) +
@@ -896,7 +958,9 @@ rise.screen.meta = function(yone,
       ) +
       # prediction interval row (red horizontal line, no central point)
       geom_errorbar(
-        data = filter(plot.df, study == paste0(100*(1-alpha), "% Prediction interval")),
+        data = filter(plot.df, study == paste0(
+          100 * (1 - alpha), "% Prediction interval"
+        )),
         aes(xmin = pi.delta.lower, xmax = pi.delta.upper),
         width = 0.15,
         linewidth = 1.5,
@@ -1114,4 +1178,3 @@ rise.screen.meta = function(yone,
   )
   
 }
-

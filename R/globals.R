@@ -11,6 +11,6 @@ if (getRversion() >= "2.15.1") {
       "p.unadjusted", "sd.delta", "se.delta", "study.label", "study.weight",
       "study.weight.relative", "u.y", "weight.heterogeneity", "weight.strength",
       "weights.tau.sum", "y", "n.indiv", "ci_width", ".", "present",
-     "pi.delta.lower", "pi.delta.upper", "pi.lower", "pi.upper")
+     "pi.delta.lower", "pi.delta.upper", "pi.lower", "pi.upper", "return.evaluate.results")
   )
 }

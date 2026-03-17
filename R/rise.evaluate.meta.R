@@ -286,7 +286,7 @@ rise.evaluate.meta = function(yone,
   if (any(evaluation.metrics.study$sd == 0)) {
     sd0.studies = evaluation.metrics.study %>%
       filter(sd == 0) %>%
-      pull(study) %>% 
+      pull(study) %>%
       unique()
     
     message(
@@ -295,14 +295,14 @@ rise.evaluate.meta = function(yone,
         paste(sd0.studies, collapse = ", "),
         "' have degenerate (exactly 0) estimation of standard error",
         " for the combined marker gamma. ",
-        "This is likely due to small sample size and perfect pairwise", 
+        "This is likely due to small sample size and perfect pairwise",
         " concordance between gamma and the primary endpoint.",
         " These studies will be removed from the meta-analysis."
       )
     )
     
-    evaluation.metrics.study = evaluation.metrics.study %>% 
-      filter(sd !=0)
+    evaluation.metrics.study = evaluation.metrics.study %>%
+      filter(sd != 0)
   }
   
   # Now do meta-analysis on these results
@@ -317,6 +317,34 @@ rise.evaluate.meta = function(yone,
   sample.sizes.marker = evaluation.metrics.study %>%
     mutate(n.indiv = ifelse(study %in% paired.studies, n / 2, n)) %>%
     pull(n.indiv)
+  
+  if (nrow(evaluation.metrics.study) == 2) {
+    message(
+      paste0(
+        "Note: gamma has only 2 studies available for estimation.",
+        " Prediction intervals will not be available."
+      )
+    )
+  }
+  
+  if (nrow(evaluation.metrics.study) == 1) {
+    message(
+      paste0(
+        "Note: gamma has only 1 study available for estimation.",
+        " Meta-analysis is not possible."
+      )
+    )
+    
+    return(
+      list(
+        "individual.metrics" = NULL,
+        "evaluation.metrics.study" = evaluation.metrics.study,
+        "evaluation.metrics.meta" = NULL,
+        "gamma.s" = gamma.s,
+        "gamma.s.plot" = list()
+      )
+    )
+  }
   
   # Call the restricted maximum likelihood random-effects meta-analysis function
   delta.reml.marker = delta.reml.meta(
@@ -556,10 +584,16 @@ rise.evaluate.meta = function(yone,
     diamond.df <- data.frame(x = numeric(0), y = numeric(0))
     if (any(plot.df$is.summary)) {
       s <- plot.df %>% filter(is.summary) %>% slice(1)
-      if (!is.na(s$summary.ci.lower) && !is.na(s$summary.ci.upper)) {
+      if (!is.na(s$summary.ci.lower) &&
+          !is.na(s$summary.ci.upper)) {
         h <- 0.10   # slim diamond height
         diamond.df <- data.frame(
-          x = c(s$delta, s$summary.ci.upper, s$delta, s$summary.ci.lower),
+          x = c(
+            s$delta,
+            s$summary.ci.upper,
+            s$delta,
+            s$summary.ci.lower
+          ),
           y = c(s$y + h, s$y, s$y - h, s$y)
         )
       }
@@ -572,13 +606,14 @@ rise.evaluate.meta = function(yone,
     I2.txt   <- formatC(evaluation.metrics.meta$I2,
                         digits = 1,
                         format = "f")
-    ccc.txt = formatC(ccc,
-                      digits = 2,
-                      format = "f")
+    ccc.txt = formatC(ccc, digits = 2, format = "f")
     
     # Plot parameters
     base.text.size <- 14
-    y.min <- if (show.pooled.effect) -1.5 else 0
+    y.min <- if (show.pooled.effect)
+      - 1.5
+    else
+      0
     y.max <- k + 1
     rel.w.left  <- 0.45
     rel.w.mid   <- 1.10
@@ -624,7 +659,11 @@ rise.evaluate.meta = function(yone,
         orientation = "y"
       ) +
       geom_point(
-        data = filter(plot.df, !is.summary & study != paste0(100 * (1 - alpha), "% Prediction interval")),
+        data = filter(
+          plot.df,
+          !is.summary &
+            study != paste0(100 * (1 - alpha), "% Prediction interval")
+        ),
         shape = 16,
         size = 3.5
       ) +
@@ -638,7 +677,9 @@ rise.evaluate.meta = function(yone,
       ) +
       # prediction interval row (red horizontal line, no central point)
       geom_errorbar(
-        data = filter(plot.df, study == paste0(100 * (1 - alpha), "% Prediction interval")),
+        data = filter(plot.df, study == paste0(
+          100 * (1 - alpha), "% Prediction interval"
+        )),
         aes(xmin = pi.lower, xmax = pi.upper),
         width = 0.15,
         linewidth = 1.5,
@@ -795,7 +836,14 @@ rise.evaluate.meta = function(yone,
       align = "h"
     )
     
-    info.text <- paste0("Tau-squared = ", tau2.txt, "   |   I-Squared = ", I2.txt, "%   |  Lin's CCC =  ", ccc.txt,"   |   k = ", k)
+    info.text <- paste0("Tau-squared = ",
+                        tau2.txt,
+                        "   |   I-Squared = ",
+                        I2.txt,
+                        "%   |  Lin's CCC =  ",
+                        ccc.txt,
+                        "   |   k = ",
+                        k)
     info.grob <- ggdraw() + draw_label(
       info.text,
       x = 0.5,

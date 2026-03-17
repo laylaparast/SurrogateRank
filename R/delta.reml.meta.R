@@ -228,7 +228,7 @@ delta.reml.meta <- function(delta = NULL,
   var_pred <- (se.HK^2) + tau2.hat
   se.pred <- sqrt(var_pred)
   
-  # degrees of freedom for PI: commonly M-2; if too small, fall back to normal quantile
+  # degrees of freedom for PI: M-2 
   df_pi <- n.studies - 2
   tcrit_pi <- qt(1 - alpha / 2, df = df_pi)
   
