@@ -4,8 +4,7 @@
 #' @param sd.delta numeric vector of standard error of delta values per study
 #' @param epsilon numeric non-inferiority margin for testing cross-study validity
 #' @param alpha numeric significance level of test. Note : using the two-one-sided test (\code{alternative = "two.sided"})
-#'   produces a (1-2\code{alpha})*100% confidence interval, so you may consider halving your
-#'   desired \code{alpha} if using this option.
+#'   produces a (1-2\code{alpha})*100% confidence interval.
 #' @param alternative character giving the alternative hypothesis type for testing the summary effect.
 #'   One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".

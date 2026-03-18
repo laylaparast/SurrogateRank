@@ -76,10 +76,13 @@
 #'   \item \code{screening.metrics.meta} : dataframe of meta-analysis screening results.
 #'   For each candidate marker - number of studies \code{n.studies},
 #'   estimate of mean delta value \code{mu.delta},
-#'   its standard error \code{se.delta} and 100%*1-alpha confidence interval,
-#'   its 100%*1-alpha prediction interval,
+#'   its standard error \code{se.delta}, confidence interval and prediction interval,
 #'   estimate of tau-squared \code{tau2}, Cochran's Q-statistic and Higgins-Thompson I-Squared,
-#'   unadjusted and adjusted meta-analysis p-values, and standardised weights.
+#'   unadjusted and adjusted meta-analysis p-values, and standardised weights. 
+#'   Note : if using the non-inferiority test (i.e. \code{alternative = "less"}),
+#'          the intervals have width (1-\code{alpha})*100%,
+#'          whereas the two-one-sided test (i.e. \code{alternative = "two.sided"})
+#'          corresponds to a (1-2\code{alpha})*100% width.
 #'   \item \code{significant.markers}: character vector of markers with meta-analysis p-values \code{< alpha}
 #'   \item \code{screening.weights}: dataframe giving marker names and the standardised meta-analysis weights
 #'   \item \code{evaluation.metrics.study} : dataframe of per-study results for the combined marker gamma, evaluated on the same data
@@ -621,7 +624,7 @@ rise.screen.meta = function(yone,
   #jump
   # Initialise temporary dataframe for results
   df.gamma.temp = data.frame(
-    "study" = "Pooled effect",
+    "study" = paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)"),
     "n" = length(yone) + length(yzero),
     "delta.estimate" = delta.reml.gamma$mu.delta,
     "sd.delta" = delta.reml.gamma$se.delta,
@@ -779,8 +782,8 @@ rise.screen.meta = function(yone,
     ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
     
     # Separate studies vs summary
-    studies.df <- gamma.results.allstudies.df2 %>% filter(study != "Pooled effect")
-    summary.row <- gamma.results.allstudies.df2 %>% filter(study == "Pooled effect")
+    studies.df <- gamma.results.allstudies.df2 %>% filter(study != paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)"))
+    summary.row <- gamma.results.allstudies.df2 %>% filter(study == paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)"))
     
     # vertical positions: top (k) down to 1; summary at y = 0
     k <- nrow(studies.df)
@@ -790,7 +793,7 @@ rise.screen.meta = function(yone,
     # Prepare combined plotting df and standard display labels
     plot.df <- bind_rows(studies.df, summary.row) %>%
       mutate(
-        is.summary = (study == "Pooled effect"),
+        is.summary = (study == paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)")),
         study.label = study,
         label.pval = ifelse(is.na(p), "", formatC(
           p, format = "f", digits = 3
@@ -812,8 +815,8 @@ rise.screen.meta = function(yone,
     if (show.pooled.effect) {
       pi.row <- summary.row %>%
         mutate(
-          study = paste0(100 * (1 - alpha), "% Prediction interval"),
-          study.label = paste0(100 * (1 - alpha), "% Prediction interval"),
+          study = paste0(100 * (1 - *alpha), "% Prediction interval"),
+          study.label = paste0(100 * (1 - *alpha), "% Prediction interval"),
           ci.delta.lower = NA_real_,
           ci.delta.upper = NA_real_,
           p = NA_real_,
@@ -919,7 +922,7 @@ rise.screen.meta = function(yone,
       geom_point(
         data = filter(
           plot.df,!is.summary &
-            study != paste0(100 * (1 - alpha), "% Prediction interval")
+            study != paste0(100 * (1 - *alpha), "% Prediction interval")
         ),
         shape = 16,
         size = 3.5
@@ -935,7 +938,7 @@ rise.screen.meta = function(yone,
       # prediction interval row (red horizontal line, no central point)
       geom_errorbar(
         data = filter(plot.df, study == paste0(
-          100 * (1 - alpha), "% Prediction interval"
+          100 * (1 - *alpha), "% Prediction interval"
         )),
         aes(xmin = pi.delta.lower, xmax = pi.delta.upper),
         width = 0.15,

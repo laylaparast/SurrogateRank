@@ -131,10 +131,13 @@ For each candidate marker - study name, study sample size, estimate of delta, st
 \item \code{screening.metrics.meta} : dataframe of meta-analysis screening results.
 For each candidate marker - number of studies \code{n.studies},
 estimate of mean delta value \code{mu.delta},
-its standard error \code{se.delta} and 100\%*1-alpha confidence interval,
-its 100\%*1-alpha prediction interval,
+its standard error \code{se.delta}, confidence interval and prediction interval,
 estimate of tau-squared \code{tau2}, Cochran's Q-statistic and Higgins-Thompson I-Squared,
 unadjusted and adjusted meta-analysis p-values, and standardised weights.
+Note : if using the non-inferiority test (i.e. \code{alternative = "less"}),
+the intervals have width (1-\code{alpha})*100\%,
+whereas the two-one-sided test (i.e. \code{alternative = "two.sided"})
+corresponds to a (1-2\code{alpha})*100\% width.
 \item \code{significant.markers}: character vector of markers with meta-analysis p-values \code{< alpha}
 \item \code{screening.weights}: dataframe giving marker names and the standardised meta-analysis weights
 \item \code{evaluation.metrics.study} : dataframe of per-study results for the combined marker gamma, evaluated on the same data
