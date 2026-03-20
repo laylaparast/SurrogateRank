@@ -132,16 +132,26 @@ rise.screen.meta = function(yone,
                             return.study.similarity.plot = TRUE,
                             return.evaluate.results = TRUE) {
   # DATA FORMATTING #
-  ## Convert dataframes to numeric matrices
-  if (is.data.frame(sone) | is.data.frame(szero)) {
-    sone <- as.matrix(sone)
-    szero <- as.matrix(szero)
+  ## Convert dataframes / vectors to numeric matrices
+  to_numeric_matrix <- function(x) {
+    if (is.data.frame(x)) {
+      x <- as.matrix(x)
+    }
+    if (is.vector(x) && !is.matrix(x)) {
+      x <- matrix(x, ncol = 1)
+    }
+    x
   }
+  
+  sone  <- to_numeric_matrix(sone)
+  szero <- to_numeric_matrix(szero)
   
   # If no column names on surrogate candidates, set them as the column indices
   if (is.null(colnames(sone))) {
-    colnames(sone) <- paste0("marker", 1:ncol(sone))
-    colnames(szero) <- paste0("marker", 1:ncol(szero))
+    colnames(sone) <- paste0("marker", seq_len(ncol(sone)))
+  }
+  if (is.null(colnames(szero))) {
+    colnames(szero) <- paste0("marker", seq_len(ncol(szero)))
   }
   
   # VALIDITY CHECKS #
@@ -210,8 +220,8 @@ rise.screen.meta = function(yone,
     yzero.study = yzero[studyzero == study] # Extract study samples
     yone.study = yone[studyone == study]
     
-    szero.study = szero[studyzero == study, ]
-    sone.study = sone[studyone == study, ]
+    szero.study = szero[studyzero == study, , drop = FALSE]
+    sone.study = sone[studyone == study, , drop = FALSE]
     
     # Check if this study is paired
     if (is.null(paired.studies)) {
@@ -815,8 +825,8 @@ rise.screen.meta = function(yone,
     if (show.pooled.effect) {
       pi.row <- summary.row %>%
         mutate(
-          study = paste0(100 * (1 - *alpha), "% Prediction interval"),
-          study.label = paste0(100 * (1 - *alpha), "% Prediction interval"),
+          study = paste0(100 * (1 - alpha), "% Prediction interval"),
+          study.label = paste0(100 * (1 - alpha), "% Prediction interval"),
           ci.delta.lower = NA_real_,
           ci.delta.upper = NA_real_,
           p = NA_real_,
@@ -922,7 +932,7 @@ rise.screen.meta = function(yone,
       geom_point(
         data = filter(
           plot.df,!is.summary &
-            study != paste0(100 * (1 - *alpha), "% Prediction interval")
+            study != paste0(100 * (1 - alpha), "% Prediction interval")
         ),
         shape = 16,
         size = 3.5
@@ -938,7 +948,7 @@ rise.screen.meta = function(yone,
       # prediction interval row (red horizontal line, no central point)
       geom_errorbar(
         data = filter(plot.df, study == paste0(
-          100 * (1 - *alpha), "% Prediction interval"
+          100 * (1 - alpha), "% Prediction interval"
         )),
         aes(xmin = pi.delta.lower, xmax = pi.delta.upper),
         width = 0.15,

@@ -552,8 +552,8 @@ rise.evaluate.meta = function(yone,
     if (show.pooled.effect) {
       pi.row <- summary.row %>%
         mutate(
-          study = paste0(100 * (1 - *alpha), "% Prediction interval"),
-          study.label = paste0(100 * (1 - *alpha), "% Prediction interval"),
+          study = paste0(100 * (1 - alpha), "% Prediction interval"),
+          study.label = paste0(100 * (1 - alpha), "% Prediction interval"),
           ci.lower = NA_real_,
           ci.upper = NA_real_,
           # keep pi.lower / pi.upper as they come from summary.row (do not overwrite)
@@ -662,7 +662,7 @@ rise.evaluate.meta = function(yone,
         data = filter(
           plot.df,
           !is.summary &
-            study != paste0(100 * (1 - *alpha), "% Prediction interval")
+            study != paste0(100 * (1 - alpha), "% Prediction interval")
         ),
         shape = 16,
         size = 3.5
@@ -678,7 +678,7 @@ rise.evaluate.meta = function(yone,
       # prediction interval row (red horizontal line, no central point)
       geom_errorbar(
         data = filter(plot.df, study == paste0(
-          100 * (1 - *alpha), "% Prediction interval"
+          100 * (1 - alpha), "% Prediction interval"
         )),
         aes(xmin = pi.lower, xmax = pi.upper),
         width = 0.15,
