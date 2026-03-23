@@ -6,19 +6,21 @@
 #' @param alpha numeric significance level of test. Note : using the two-one-sided test (\code{alternative = "two.sided"})
 #'   produces a (1-2\code{alpha})*100% confidence interval.
 #' @param alternative character giving the alternative hypothesis type for testing the summary effect.
-#'   One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
-#'   corresponds to a two one-sided test procedure. Default is "two.sided".
+#'   One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and
+#'   "two.sided" corresponds to a two one-sided test procedure. Default is "two.sided".
 #' @param tol numeric convergence tolerance for finding a root of the score equation
 #' @param verbose logical flag indicating whether messages should be printed, defaults to \code{FALSE}
-#' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to 
+#' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to
 #' variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
-#'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing. 
+#'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing.
+#' @param meta.analysis.method character giving the meta-analysis method to be used. The default is \code{RE}, corresponding to
+#' random-effects meta-analysis, whereas setting this argument to \code{FE} uses fixed-effects meta-analysis.
 #'
 #' @return a list with elements \itemize{
 #'   \item \code{n.studies} : numeric, number of studies considered
 #'   \item \code{tau2} : numeric, estimated tau-squared (between-study heterogeneity)
 #'   \item \code{mu.delta} : numeric, estimated mean of distribution of delta
-#'   \item \code{se.delta} : numeric, standard error of delta summary estimate with Hartung-Knapp adjustment
+#'   \item \code{se.delta} : numeric, standard error of delta summary estimate
 #'   \item \code{ci.delta.upper} : numeric, upper confidence interval for mean of delta.
 #'          Note : if using the non-inferiority test (i.e. \code{alternative = "less"}),
 #'          these bounds correspond to a (1-\code{alpha})*100% confidence interval,
@@ -51,7 +53,8 @@ delta.reml.meta <- function(delta = NULL,
                             alternative = "two.sided",
                             tol = 1e-10,
                             verbose = FALSE,
-                            test = "knha") {
+                            test = "knha",
+                            meta.analysis.method = "RE") {
   # Validity checks
   n.studies = length(delta)
   
@@ -61,6 +64,10 @@ delta.reml.meta <- function(delta = NULL,
   
   if (is.null(epsilon)) {
     stop("epsilon (equivalence margin) must be supplied")
+  }
+  
+  if (!meta.analysis.method %in% c("RE", "FE")) {
+    stop("meta.analysis.method must be one of c(\"RE\", \"FE\")")
   }
   
   # Remove values with exactly 0 standard deviation
@@ -110,47 +117,54 @@ delta.reml.meta <- function(delta = NULL,
   # try uniroot on [0, upper] if a sign change exists
   tau2.hat <- NA
   
-  s0 <- score.fn(0)
-  su <- score.fn(upper)
-  
-  if (is.finite(s0) && is.finite(su) && s0 * su < 0) {
-    ur <- tryCatch(
-      uniroot(
-        score.fn,
+  if (meta.analysis.method == "RE") {
+    s0 <- score.fn(0)
+    su <- score.fn(upper)
+    
+    if (is.finite(s0) && is.finite(su) && s0 * su < 0) {
+      ur <- tryCatch(
+        uniroot(
+          score.fn,
+          lower = 0,
+          upper = upper,
+          tol = tol
+        ),
+        error = function(e)
+          e
+      )
+      if (!inherits(ur, "error")) {
+        tau2.hat <- max(0, ur$root)
+        converged <- TRUE
+      } else {
+        converged <- FALSE
+        if (verbose) {
+          message("uniroot failed; falling back to optimize on restricted log-likelihood")
+        }
+      }
+    } else {
+      converged = FALSE
+    }
+    
+    if (!converged) {
+      opt <- optimize(
+        neg.restricted.loglik,
         lower = 0,
         upper = upper,
         tol = tol
-      ),
-      error = function(e)
-        e
-    )
-    if (!inherits(ur, "error")) {
-      tau2.hat <- max(0, ur$root)
-      converged <- TRUE
-    } else {
-      converged <- FALSE
-      if (verbose) {
-        message("uniroot failed; falling back to optimize on restricted log-likelihood")
-      }
+      )
+      tau2.hat <- max(0, opt$minimum)
     }
   } else {
-    converged = FALSE
-  }
-  
-  if (!converged) {
-    opt <- optimize(
-      neg.restricted.loglik,
-      lower = 0,
-      upper = upper,
-      tol = tol
-    )
-    tau2.hat <- max(0, opt$minimum)
+    tau2.hat <- 0
   }
   
   # -------------------------
   # pooled estimates
   # -------------------------
-  w.tau <- 1 / (vi + tau2.hat)
+  w.tau <- if (meta.analysis.method == "RE")
+    1 / (vi + tau2.hat)
+  else
+    1 / vi
   mu.delta.hat <- sum(w.tau * delta) / sum(w.tau)
   var.conv <- 1 / sum(w.tau)
   se.conv <- sqrt(var.conv)
@@ -167,10 +181,29 @@ delta.reml.meta <- function(delta = NULL,
   # -------------------------
   # CI, SE, and tests (branch on test argument)
   # -------------------------
-  if (test == "z") {
+  if (meta.analysis.method == "FE") {
     se.final <- se.conv
     zcrit <- qnorm(1 - alpha)
-    ci.final <- c(mu.delta.hat - zcrit * se.final, mu.delta.hat + zcrit * se.final)
+    ci.final <- c(mu.delta.hat - zcrit * se.final,
+                  mu.delta.hat + zcrit * se.final)
+    
+    if (alternative == "two.sided") {
+      T.L <- (mu.delta.hat + epsilon) / se.final
+      T.U <- (mu.delta.hat - epsilon) / se.final
+      p.lower <- 1 - pnorm(T.L)
+      p.upper <- pnorm(T.U)
+      p.final <- max(p.lower, p.upper)
+    } else {
+      T.U <- (mu.delta.hat - epsilon) / se.final
+      p.final <- pnorm(T.U)
+      p.lower <- NULL
+      p.upper <- NULL
+    }
+  } else if (test == "z") {
+    se.final <- se.conv
+    zcrit <- qnorm(1 - alpha)
+    ci.final <- c(mu.delta.hat - zcrit * se.final,
+                  mu.delta.hat + zcrit * se.final)
     
     if (alternative == "two.sided") {
       T.L <- (mu.delta.hat + epsilon) / se.final
@@ -188,7 +221,8 @@ delta.reml.meta <- function(delta = NULL,
     # Default: Hartung-Knapp, t-distribution
     se.final <- se.HK
     tcrit <- qt(1 - alpha, df = n.studies - 1)
-    ci.final <- c(mu.delta.hat - tcrit * se.final, mu.delta.hat + tcrit * se.final)
+    ci.final <- c(mu.delta.hat - tcrit * se.final,
+                  mu.delta.hat + tcrit * se.final)
     
     if (alternative == "two.sided") {
       T.L <- (mu.delta.hat + epsilon) / se.final
@@ -228,7 +262,7 @@ delta.reml.meta <- function(delta = NULL,
   var_pred <- (se.final^2) + tau2.hat
   se.pred <- sqrt(var_pred)
   
-  if (test == "z") {
+  if (test == "z" || meta.analysis.method == "FE") {
     zcrit_pi <- qnorm(1 - alpha / 2)
     pi.lower <- mu.delta.hat - zcrit_pi * se.pred
     pi.upper <- mu.delta.hat + zcrit_pi * se.pred

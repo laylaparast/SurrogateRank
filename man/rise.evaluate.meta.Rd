@@ -30,7 +30,8 @@ rise.evaluate.meta(
   return.all.evaluate = FALSE,
   return.forest.plot = TRUE,
   return.fit.plot = TRUE,
-  show.pooled.effect = TRUE
+  show.pooled.effect = TRUE,
+  meta.analysis.method = "RE"
 )
 }
 \arguments{
@@ -117,6 +118,9 @@ versus the effects on the combined surrogate signature for each study will be in
 
 \item{show.pooled.effect}{logical flag. If \code{TRUE} (default), the forest plot will show the pooled effect
 estimate. Otherwise, it will just show the individual trial estimates.}
+
+\item{meta.analysis.method}{character giving the meta-analysis method to be used. The default is \code{RE}, corresponding to
+random-effects meta-analysis, whereas setting this argument to \code{FE} uses fixed-effects meta-analysis.}
 }
 \value{
 a list with elements \itemize{

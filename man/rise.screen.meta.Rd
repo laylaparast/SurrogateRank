@@ -31,7 +31,8 @@ rise.screen.meta(
   return.fit.plot = TRUE,
   show.pooled.effect = TRUE,
   return.study.similarity.plot = TRUE,
-  return.evaluate.results = TRUE
+  return.evaluate.results = TRUE,
+  meta.analysis.method = "RE"
 )
 }
 \arguments{
@@ -123,6 +124,9 @@ between study-wise marker signatures (i.e., the application of RISE to each stud
 
 \item{return.evaluate.results}{logical flag. If \code{TRUE} (default), returns results for combined marker gamma, evaluated on the same
 data. Can be useful to set this as \code{FALSE} to save computational time if this is not of interest.}
+
+\item{meta.analysis.method}{character giving the meta-analysis method to be used. The default is \code{RE}, corresponding to
+random-effects meta-analysis, whereas setting this argument to \code{FE} uses fixed-effects meta-analysis.}
 }
 \value{
 a list with elements \itemize{

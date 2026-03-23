@@ -54,7 +54,9 @@ if (getRversion() >= "2.15.1") {
       "pi.lower",
       "pi.upper",
       "return.evaluate.results",
-      "n_studies"
+      "n_studies",
+      "summary.ci.lower",
+      "summary.ci.upper"
     )
   )
 }

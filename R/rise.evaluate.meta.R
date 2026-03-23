@@ -29,9 +29,9 @@
 #' @param alternative character giving the alternative hypothesis type. One of
 #'   \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
-#' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to 
+#' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to
 #' variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
-#'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing. 
+#'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing.
 #' @param paired.all logical flag giving if the data is independent or paired. If \code{FALSE} (default),
 #'   samples are assumed independent. If \code{TRUE}, all samples are assumed to be from a paired design.
 #'   The pairs are specified by matching the rows of \code{yone} and \code{sone} to the rows of
@@ -60,6 +60,8 @@
 #' versus the effects on the combined surrogate signature for each study will be included in the output.
 #' @param show.pooled.effect logical flag. If \code{TRUE} (default), the forest plot will show the pooled effect
 #' estimate. Otherwise, it will just show the individual trial estimates.
+#' @param meta.analysis.method character giving the meta-analysis method to be used. The default is \code{RE}, corresponding to
+#' random-effects meta-analysis, whereas setting this argument to \code{FE} uses fixed-effects meta-analysis.
 #'
 #' @return a list with elements \itemize{
 #'   \item \code{individual.metrics} : if \code{return.all.evaluate}=\code{TRUE}, a list containing
@@ -113,12 +115,29 @@ rise.evaluate.meta = function(yone,
                               return.all.evaluate = FALSE,
                               return.forest.plot = TRUE,
                               return.fit.plot = TRUE,
-                              show.pooled.effect = TRUE) {
+                              show.pooled.effect = TRUE,
+                              meta.analysis.method = "RE") {
   # DATA FORMATTING #
   ## Convert dataframes to numeric matrices
   if (is.data.frame(sone) | is.data.frame(szero)) {
     sone <- as.matrix(sone)
     szero <- as.matrix(szero)
+  }
+  
+  # Ensure sone and szero are matrices with at least one column
+  if (is.null(dim(sone))) {
+    sone <- matrix(sone, ncol = 1)
+  }
+  if (is.null(dim(szero))) {
+    szero <- matrix(szero, ncol = 1)
+  }
+  
+  # If they have one column but dropped dimension (edge safety)
+  if (ncol(sone) == 0) {
+    sone <- matrix(sone, ncol = 1)
+  }
+  if (ncol(szero) == 0) {
+    szero <- matrix(szero, ncol = 1)
   }
   
   if (!is.null(markers)) {
@@ -214,8 +233,8 @@ rise.evaluate.meta = function(yone,
     yzero.study = yzero[studyzero == study] # Extract study samples
     yone.study = yone[studyone == study]
     
-    szero.study = szero[studyzero == study, ]
-    sone.study = sone[studyone == study, ]
+    sone.study = sone[studyone == study, , drop = FALSE]
+    szero.study = szero[studyzero == study, , drop = FALSE]
     
     ## First combine the surrogate candidates together to standardise based on all samples
     s.combined.study <- rbind(sone.study, szero.study)
@@ -353,7 +372,8 @@ rise.evaluate.meta = function(yone,
     epsilon = epsilon.meta,
     alpha = alpha,
     alternative = alternative,
-    test = test
+    test = test,
+    meta.analysis.method = meta.analysis.method
   )[["results"]]
   
   # Save the study weights in one of the results dataframes
@@ -410,7 +430,7 @@ rise.evaluate.meta = function(yone,
     # Plot with CCC annotation and improved sizing
     # Plot with smallest n always visible (size_min = 5)
     fit.plot <- evaluation.metrics.study %>%
-      ggplot(aes(x = u.y, y = u.s)) +
+      ggplot(aes(y = u.y, x = u.s)) +
       geom_point(
         aes(size = n),
         shape = 21,
@@ -478,7 +498,7 @@ rise.evaluate.meta = function(yone,
     
     df.gamma.temp = evaluation.metrics.meta %>%
       mutate(
-        study = paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)"),
+        study = paste0("Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"),
         delta = mu.delta,
         ci.lower = ci.delta.lower,
         ci.upper = ci.delta.upper,
@@ -512,8 +532,13 @@ rise.evaluate.meta = function(yone,
     ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
     
     # Separate studies vs summary
-    studies.df <- evaluation.metrics.study2 %>% filter(study != paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)"))
-    summary.row <- evaluation.metrics.study2 %>% filter(study == paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)"))
+    studies.df <- evaluation.metrics.study2 %>% filter(study != paste0("Pooled effect (", 100 *
+                                                                         (1 - 2 * alpha), "% C.I.)"))
+    summary.row <- evaluation.metrics.study2 %>% filter(study == paste0("Pooled effect (", 100 *
+                                                                          (1 - 2 * alpha), "% C.I.)"))
+    
+    # sort studies by effect size from most negative to most positive
+    studies.df <- studies.df %>% arrange(delta)
     
     # vertical positions: top (k) down to 1; summary at y = 0
     k <- nrow(studies.df)
@@ -523,7 +548,9 @@ rise.evaluate.meta = function(yone,
     # Prepare combined plotting df and standard display labels
     plot.df <- bind_rows(studies.df, summary.row) %>%
       mutate(
-        is.summary = (study == paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)")),
+        is.summary = (study == paste0(
+          "Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"
+        )),
         study.label = study,
         label.pval = ifelse(
           is.na(p.unadjusted),
@@ -535,16 +562,21 @@ rise.evaluate.meta = function(yone,
         summary_size = pmin(ci_width / 2, 6)
       )
     
-    # preserve summary CI for diamond (capture before blanking ci for summary)
+    # clip confidence intervals to [-1, 1] before plotting
     plot.df <- plot.df %>%
       mutate(
         summary.ci.lower = ifelse(is.summary, ci.lower, NA_real_),
-        summary.ci.upper = ifelse(is.summary, ci.upper, NA_real_)
-      ) %>%
-      # blank generic study CI for summary rows (so geom_errorbar doesn't draw a bar for summary)
-      mutate(
+        summary.ci.upper = ifelse(is.summary, ci.upper, NA_real_),
         ci.lower = ifelse(is.summary, NA_real_, ci.lower),
-        ci.upper = ifelse(is.summary, NA_real_, ci.upper)
+        ci.upper = ifelse(is.summary, NA_real_, ci.upper),
+        summary.ci.lower = ifelse(is.na(summary.ci.lower), NA_real_, pmax(pmin(
+          summary.ci.lower, 1
+        ), -1)),
+        summary.ci.upper = ifelse(is.na(summary.ci.upper), NA_real_, pmax(pmin(
+          summary.ci.upper, 1
+        ), -1)),
+        ci.lower = ifelse(is.na(ci.lower), NA_real_, pmax(pmin(ci.lower, 1), -1)),
+        ci.upper = ifelse(is.na(ci.upper), NA_real_, pmax(pmin(ci.upper, 1), -1))
       )
     
     # add prediction-interval row (keeps its pi.lower/pi.upper values from summary.row),
@@ -564,7 +596,9 @@ rise.evaluate.meta = function(yone,
           y = -1,
           is.summary = FALSE,
           label.pval = "",
-          label.n = ""
+          label.n = "",
+          pi.lower = ifelse(is.na(pi.lower), NA_real_, pmax(pmin(pi.lower, 1), -1)),
+          pi.upper = ifelse(is.na(pi.upper), NA_real_, pmax(pmin(pi.upper, 1), -1))
         )
       plot.df <- bind_rows(plot.df, pi.row)
     }
@@ -600,9 +634,12 @@ rise.evaluate.meta = function(yone,
     }
     
     # Heterogeneity text from provided object evaluation.metrics.meta
-    tau2.txt <- formatC(evaluation.metrics.meta$tau2,
-                        digits = 4,
-                        format = "f")
+    tau2.txt <- sub(
+      "e-0?",
+      "e-",
+      # remove leading zero in exponent
+      format(signif(evaluation.metrics.meta$tau2, 1), scientific = TRUE)
+    )
     I2.txt   <- formatC(evaluation.metrics.meta$I2,
                         digits = 1,
                         format = "f")
@@ -660,8 +697,7 @@ rise.evaluate.meta = function(yone,
       ) +
       geom_point(
         data = filter(
-          plot.df,
-          !is.summary &
+          plot.df,!is.summary &
             study != paste0(100 * (1 - alpha), "% Prediction interval")
         ),
         shape = 16,
@@ -674,6 +710,20 @@ rise.evaluate.meta = function(yone,
         inherit.aes = FALSE,
         fill = "#CCCCCC",
         color = "black"
+      ) +
+      # blue dotted vertical line from pooled estimate upward
+      geom_segment(
+        data = filter(plot.df, is.summary),
+        aes(
+          x = delta,
+          xend = delta,
+          y = y,
+          yend = y.max
+        ),
+        inherit.aes = FALSE,
+        linetype = "dotted",
+        color = "#4C78A8",
+        linewidth = 0.8
       ) +
       # prediction interval row (red horizontal line, no central point)
       geom_errorbar(

@@ -34,9 +34,9 @@
 #' @param alternative character giving the alternative hypothesis type. One of
 #'   \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
-#' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to 
+#' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to
 #' variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
-#'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing. 
+#'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing.
 #' @param paired.all logical flag giving if the data is independent or paired. If \code{FALSE} (default),
 #'   samples are assumed independent. If \code{TRUE}, all samples are assumed to be from a paired design.
 #'   The pairs are specified by matching the rows of \code{yone} and \code{sone} to the rows of
@@ -69,6 +69,8 @@
 #' between study-wise marker signatures (i.e., the application of RISE to each study individually, with p-value correction within-study).
 #' @param return.evaluate.results logical flag. If \code{TRUE} (default), returns results for combined marker gamma, evaluated on the same
 #' data. Can be useful to set this as \code{FALSE} to save computational time if this is not of interest.
+#' @param meta.analysis.method character giving the meta-analysis method to be used. The default is \code{RE}, corresponding to
+#' random-effects meta-analysis, whereas setting this argument to \code{FE} uses fixed-effects meta-analysis.
 #'
 #' @return a list with elements \itemize{
 #'   \item \code{screening.metrics.study} : dataframe of per-study results from RISE screening.
@@ -78,7 +80,7 @@
 #'   estimate of mean delta value \code{mu.delta},
 #'   its standard error \code{se.delta}, confidence interval and prediction interval,
 #'   estimate of tau-squared \code{tau2}, Cochran's Q-statistic and Higgins-Thompson I-Squared,
-#'   unadjusted and adjusted meta-analysis p-values, and standardised weights. 
+#'   unadjusted and adjusted meta-analysis p-values, and standardised weights.
 #'   Note : if using the non-inferiority test (i.e. \code{alternative = "less"}),
 #'          the intervals have width (1-\code{alpha})*100%,
 #'          whereas the two-one-sided test (i.e. \code{alternative = "two.sided"})
@@ -130,7 +132,8 @@ rise.screen.meta = function(yone,
                             return.fit.plot = TRUE,
                             show.pooled.effect = TRUE,
                             return.study.similarity.plot = TRUE,
-                            return.evaluate.results = TRUE) {
+                            return.evaluate.results = TRUE,
+                            meta.analysis.method = "RE") {
   # DATA FORMATTING #
   ## Convert dataframes / vectors to numeric matrices
   to_numeric_matrix <- function(x) {
@@ -373,38 +376,36 @@ rise.screen.meta = function(yone,
   }
   
   # Pre-split data by marker once to avoid repeated filtering in the loop
-  marker.data.list <- split(rise.screen.results.allstudies.df, rise.screen.results.allstudies.df$marker)
+  marker.data.list <- split(rise.screen.results.allstudies.df,
+                            rise.screen.results.allstudies.df$marker)
   markers.to.run  <- intersect(all.markers, names(marker.data.list))
   markers.to.run  <- markers.to.run[sapply(marker.data.list[markers.to.run], nrow) > 1]
-
+  
   run.one.marker <- function(df.summary.marker) {
     x   <- df.summary.marker$u.y
     y   <- df.summary.marker$u.s
     ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
-
+    
     delta.marker        <- df.summary.marker$delta
     sd.delta.marker     <- df.summary.marker$sd
-
+    
     res <- delta.reml.meta(
       delta        = delta.marker,
       sd.delta     = sd.delta.marker,
       epsilon      = epsilon.meta,
       alpha        = alpha,
       alternative  = alternative,
-      test = test
+      test = test,
+      meta.analysis.method = meta.analysis.method
     )[["results"]]
-
+    
     res$weights.tau          <- NULL
     res$weights.tau.relative <- NULL
     res$ccc                  <- ccc
     res
   }
-
-  delta.reml.marker <- parallel::mclapply(
-    marker.data.list[markers.to.run],
-    run.one.marker,
-    mc.cores = n.cores
-  )
+  
+  delta.reml.marker <- parallel::mclapply(marker.data.list[markers.to.run], run.one.marker, mc.cores = n.cores)
   
   # Bind per-marker results into a data frame
   delta.reml.df = bind_rows(delta.reml.marker, .id = "marker")
@@ -627,14 +628,15 @@ rise.screen.meta = function(yone,
     epsilon = epsilon.meta,
     alpha = alpha,
     alternative = alternative,
-    test = test
+    test = test,
+    meta.analysis.method = meta.analysis.method
   )[["results"]]
   
   study.weights = data.frame(delta.reml.gamma$weights.tau.relative)
   #jump
   # Initialise temporary dataframe for results
   df.gamma.temp = data.frame(
-    "study" = paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)"),
+    "study" = paste0("Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"),
     "n" = length(yone) + length(yzero),
     "delta.estimate" = delta.reml.gamma$mu.delta,
     "sd.delta" = delta.reml.gamma$se.delta,
@@ -697,7 +699,7 @@ rise.screen.meta = function(yone,
       legend_breaks <- unique(n_vals)
       legend_labels <- as.character(unique(n_vals))
     } else {
-      min_label <- round_down_10(min(n_vals))
+      min_label <- max(round_down_10(min(n_vals)), min(n_vals))
       max_label <- round_up_10(max(n_vals))
       mid_label <- round_up_50(median(n_vals))
       
@@ -710,7 +712,7 @@ rise.screen.meta = function(yone,
     # Plot with CCC annotation and improved sizing
     # Plot with smallest n always visible (size_min = 5)
     fit.plot <- gamma.results.allstudies.df %>%
-      ggplot(aes(x = u.y, y = u.s)) +
+      ggplot(aes(y = u.y, x = u.s)) +
       geom_point(
         aes(size = n),
         shape = 21,
@@ -792,8 +794,13 @@ rise.screen.meta = function(yone,
     ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
     
     # Separate studies vs summary
-    studies.df <- gamma.results.allstudies.df2 %>% filter(study != paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)"))
-    summary.row <- gamma.results.allstudies.df2 %>% filter(study == paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)"))
+    studies.df <- gamma.results.allstudies.df2 %>% filter(study != paste0("Pooled effect (", 100 *
+                                                                            (1 - 2 * alpha), "% C.I.)"))
+    summary.row <- gamma.results.allstudies.df2 %>% filter(study == paste0("Pooled effect (", 100 *
+                                                                             (1 - 2 * alpha), "% C.I.)"))
+    
+    # sort studies by effect size from most negative to most positive
+    studies.df <- studies.df %>% arrange(delta.estimate)
     
     # vertical positions: top (k) down to 1; summary at y = 0
     k <- nrow(studies.df)
@@ -803,7 +810,9 @@ rise.screen.meta = function(yone,
     # Prepare combined plotting df and standard display labels
     plot.df <- bind_rows(studies.df, summary.row) %>%
       mutate(
-        is.summary = (study == paste0("Pooled effect (", 100*(1-2*alpha), "% C.I.)")),
+        is.summary = (study == paste0(
+          "Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"
+        )),
         study.label = study,
         label.pval = ifelse(is.na(p), "", formatC(
           p, format = "f", digits = 3
@@ -840,6 +849,35 @@ rise.screen.meta = function(yone,
       plot.df <- bind_rows(plot.df, pi.row)
     }
     
+    # clip CIs to the plotting interval prior to plotting
+    plot.df <- plot.df %>%
+      mutate(
+        ci.delta.lower = ifelse(is.na(ci.delta.lower), NA_real_, pmax(pmin(
+          ci.delta.lower, 1
+        ), -1)),
+        ci.delta.upper = ifelse(is.na(ci.delta.upper), NA_real_, pmax(pmin(
+          ci.delta.upper, 1
+        ), -1)),
+        summary.ci.lower = ifelse(is.na(summary.ci.lower), NA_real_, pmax(pmin(
+          summary.ci.lower, 1
+        ), -1)),
+        summary.ci.upper = ifelse(is.na(summary.ci.upper), NA_real_, pmax(pmin(
+          summary.ci.upper, 1
+        ), -1))
+      )
+    
+    if (show.pooled.effect) {
+      plot.df <- plot.df %>%
+        mutate(
+          pi.delta.lower = ifelse(is.na(pi.delta.lower), NA_real_, pmax(pmin(
+            pi.delta.lower, 1
+          ), -1)),
+          pi.delta.upper = ifelse(is.na(pi.delta.upper), NA_real_, pmax(pmin(
+            pi.delta.upper, 1
+          ), -1))
+        )
+    }
+    
     # Labels for weighting
     weights.vec <- studies.df$study.weights
     pct.vec <- weights.vec
@@ -871,9 +909,12 @@ rise.screen.meta = function(yone,
     }
     
     # Heterogeneity text from provided object delta.reml.gamma
-    tau2.txt <- formatC(delta.reml.gamma$tau2,
-                        digits = 4,
-                        format = "f")
+    tau2.txt <- sub(
+      "e-0?",
+      "e-",
+      # remove leading zero in exponent
+      format(signif(delta.reml.gamma$tau2, 1), scientific = TRUE)
+    )
     I2.txt   <- formatC(delta.reml.gamma$I2,
                         digits = 1,
                         format = "f")
@@ -944,6 +985,20 @@ rise.screen.meta = function(yone,
         inherit.aes = FALSE,
         fill = "#CCCCCC",
         color = "black"
+      ) +
+      # dashed vertical line from pooled estimate upward
+      geom_segment(
+        data = filter(plot.df, is.summary),
+        aes(
+          x = delta.estimate,
+          xend = delta.estimate,
+          y = y,
+          yend = y.max
+        ),
+        inherit.aes = FALSE,
+        linetype = "dotted",
+        color = "#4C78A8",
+        linewidth = 0.8
       ) +
       # prediction interval row (red horizontal line, no central point)
       geom_errorbar(

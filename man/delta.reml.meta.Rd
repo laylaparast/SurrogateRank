@@ -12,7 +12,8 @@ delta.reml.meta(
   alternative = "two.sided",
   tol = 1e-10,
   verbose = FALSE,
-  test = "knha"
+  test = "knha",
+  meta.analysis.method = "RE"
 )
 }
 \arguments{
@@ -26,8 +27,8 @@ delta.reml.meta(
 produces a (1-2\code{alpha})*100\% confidence interval.}
 
 \item{alternative}{character giving the alternative hypothesis type for testing the summary effect.
-One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
-corresponds to a two one-sided test procedure. Default is "two.sided".}
+One of \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and
+"two.sided" corresponds to a two one-sided test procedure. Default is "two.sided".}
 
 \item{tol}{numeric convergence tolerance for finding a root of the score equation}
 
@@ -36,13 +37,16 @@ corresponds to a two one-sided test procedure. Default is "two.sided".}
 \item{test}{character giving the type of test to be performed. The default is \code{knha}, corresponding to
 variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
 whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing.}
+
+\item{meta.analysis.method}{character giving the meta-analysis method to be used. The default is \code{RE}, corresponding to
+random-effects meta-analysis, whereas setting this argument to \code{FE} uses fixed-effects meta-analysis.}
 }
 \value{
 a list with elements \itemize{
 \item \code{n.studies} : numeric, number of studies considered
 \item \code{tau2} : numeric, estimated tau-squared (between-study heterogeneity)
 \item \code{mu.delta} : numeric, estimated mean of distribution of delta
-\item \code{se.delta} : numeric, standard error of delta summary estimate with Hartung-Knapp adjustment
+\item \code{se.delta} : numeric, standard error of delta summary estimate
 \item \code{ci.delta.upper} : numeric, upper confidence interval for mean of delta.
 Note : if using the non-inferiority test (i.e. \code{alternative = "less"}),
 these bounds correspond to a (1-\code{alpha})*100\% confidence interval,
