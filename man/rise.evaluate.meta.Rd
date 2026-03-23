@@ -15,6 +15,7 @@ rise.evaluate.meta(
   alpha = 0.05,
   power.want.s.study = NULL,
   epsilon.study = NULL,
+  epsilon.meta.mode = "user",
   epsilon.meta = NULL,
   u.y.hyp = NULL,
   p.correction = "BH",
@@ -60,6 +61,12 @@ surrogate candidate. If \code{return.all.evaluate = TRUE}, either this or \code{
 
 \item{epsilon.study}{numeric in (0,1) - non-inferiority margin for determining surrogate validity in the
 within-study screening phase. If \code{return.all.evaluate = TRUE}, either this or \code{power.want.s.study} argument must be specified.}
+
+\item{epsilon.meta.mode}{character string specifying the mode to choose the value of the acceptable margin defined
+by epsilon. By default, this is set to "user", where the value of epsilon is fixed by the user, defined by the
+value of the argument \code{epsilon.meta}. The alternative is to set this as "mean.power", which corresponds to
+taking the mean value of epsilon across studies such that the power to detect departures from the null within
+each study is defined by the \code{power.want.s.study} argument.}
 
 \item{epsilon.meta}{numeric in (0,1) - non-inferiority margin for determining surrogate validity
 in the meta-analysis stage. Must be specified.}

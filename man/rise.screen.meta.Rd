@@ -15,6 +15,7 @@ rise.screen.meta(
   alpha = 0.05,
   power.want.s.study = NULL,
   epsilon.study = NULL,
+  epsilon.meta.mode = "user",
   epsilon.meta = NULL,
   u.y.hyp = NULL,
   p.correction = "BH",
@@ -26,6 +27,8 @@ rise.screen.meta(
   return.all.screen = TRUE,
   return.all.weights = FALSE,
   weight.mode = "diff.epsilon",
+  return.screen.plot = TRUE,
+  screen.plot.topN = 15,
   normalise.weights = TRUE,
   return.forest.plot = TRUE,
   return.fit.plot = TRUE,
@@ -62,8 +65,14 @@ surrogate candidate. Either this or \code{epsilon.study} argument must be specif
 \item{epsilon.study}{numeric in (0,1) - non-inferiority margin for determining surrogate validity in the
 within-study screening phase. Either this or \code{power.want.s.study} argument must be specified.}
 
-\item{epsilon.meta}{numeric in (0,1) - non-inferiority margin for determining surrogate validity
-in the meta-analysis stage. Must be specified.}
+\item{epsilon.meta.mode}{character string specifying the mode to choose the value of the acceptable margin defined
+by epsilon. By default, this is set to "user", where the value of epsilon is fixed by the user, defined by the
+value of the argument \code{epsilon.meta}. The alternative is to set this as "mean.power", which corresponds to
+taking the mean value of epsilon across studies such that the power to detect departures from the null within
+each study is defined by the \code{power.want.s.study} argument.}
+
+\item{epsilon.meta}{numeric in (0,1) - fixed non-inferiority margin for determining surrogate validity
+in the meta-analysis stage.}
 
 \item{u.y.hyp}{hypothesised value of the treatment effect on the primary response on the probability
 scale. If not given, it will be estimated based on the observations.}
@@ -106,6 +115,12 @@ weights as the proportion of the interval between 0 and epsilon.study cut by the
 therefore giving delta = 0 a weight of 1 and delta = epsilon.study a weight of 0. Another option is
 \code{"inverse.delta"} where the weights are determined by taking the inverse of the absolute values of delta.
 When \code{"none"}, the weights are set to 1 for every marker.}
+
+\item{return.screen.plot}{logical flag. If \code{TRUE} (default), returns a forest plot of the top predictors, sorted by p-value,
+from the screening stage. The number of predictors to display is given by the \code{screen.plot.topN} argument, which has default
+value 15.}
+
+\item{screen.plot.topN}{number of predictors to display in the screening results figure, default value is 15.}
 
 \item{normalise.weights}{logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 all the weights such that the maximum weight is 1, which can help with interpretability.}

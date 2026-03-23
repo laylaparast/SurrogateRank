@@ -18,6 +18,11 @@
 #'   surrogate candidate. If \code{return.all.evaluate = TRUE}, either this or \code{epsilon.study} argument must be specified.
 #' @param epsilon.study numeric in (0,1) - non-inferiority margin for determining surrogate validity in the
 #'   within-study screening phase. If \code{return.all.evaluate = TRUE}, either this or \code{power.want.s.study} argument must be specified.
+#' @param epsilon.meta.mode character string specifying the mode to choose the value of the acceptable margin defined
+#' by epsilon. By default, this is set to "user", where the value of epsilon is fixed by the user, defined by the
+#' value of the argument \code{epsilon.meta}. The alternative is to set this as "mean.power", which corresponds to
+#' taking the mean value of epsilon across studies such that the power to detect departures from the null within
+#' each study is defined by the \code{power.want.s.study} argument.
 #' @param epsilon.meta numeric in (0,1) - non-inferiority margin for determining surrogate validity
 #'   in the meta-analysis stage. Must be specified.
 #' @param u.y.hyp hypothesised value of the treatment effect on the primary response on the probability
@@ -100,6 +105,7 @@ rise.evaluate.meta = function(yone,
                               alpha = 0.05,
                               power.want.s.study = NULL,
                               epsilon.study = NULL,
+                              epsilon.meta.mode = "user",
                               epsilon.meta = NULL,
                               u.y.hyp = NULL,
                               p.correction = "BH",
@@ -159,16 +165,42 @@ rise.evaluate.meta = function(yone,
   # VALIDITY CHECKS #
   
   ## Check that either epsilon.study or power.want.s.study is specified
-  # if individual marker summaries are desired
-  if (return.all.evaluate) {
-    if (is.null(epsilon.study) & is.null(power.want.s.study)) {
-      stop("Must specify either epsilon.study or power.want.s.study.")
-    }
+  if (is.null(epsilon.study) & is.null(power.want.s.study)) {
+    stop("Must specify either epsilon.study or power.want.s.study.")
   }
   
-  # Check that epsilon.meta is specified
-  if (is.null(epsilon.meta)) {
-    stop("Must specify epsilon.meta.")
+  # Check that epsilon.meta is specified if the user mode is desired.
+  if (epsilon.meta.mode == "user" & is.null(epsilon.meta)) {
+    stop("You have requsted a user-defined epsilon.meta, but you have not provided it.")
+  }
+  
+  # Check that the power is specified if the mean.power approach for deciding epsilon is desired.
+  if (epsilon.meta.mode == "mean.power" &
+      is.null(power.want.s.study)) {
+    stop(
+      "You have requested the epsilon to be computed based on the within study power,
+         but you have not provided the argument power.want.s.study."
+    )
+  }
+  
+  # Print a message if both mean.power mode is selected but epsilon.meta also specified
+  if (epsilon.meta.mode == "mean.power" &
+      !is.null(epsilon.meta)) {
+    message(
+      "You have selected the mean power approach to compute epsilon meta,
+            but you have also specified epsilon.meta. Note that this value will be
+            overwritten and the mean epsilon across studies defined by the power will
+            be used instead."
+    )
+  }
+  
+  # If both power.want.s.study and epsilon.study, prioritise power and put a message
+  if (!is.null(epsilon.study) & !is.null(power.want.s.study)) {
+    message(
+      "You provided both epsilon.study and power.want.s.study.
+            Using the power argument to compute within-study epsilon by default.
+            If you wanted to fix the epsilon yourself, set power.want.s.study = NULL."
+    )
   }
   
   ## Check same number of samples in primary response and surrogates
@@ -267,6 +299,12 @@ rise.evaluate.meta = function(yone,
       paired.study = ifelse(study %in% paired.studies, TRUE, FALSE)
     }
     
+    epsilon_arg <- if (is.null(power.want.s.study)) {
+      epsilon.study
+    } else {
+      NULL
+    }
+    
     # Test gamma.s as a surrogate
     gamma.s.result.study <- test.surrogate.extension(
       yone = yone.study,
@@ -274,7 +312,8 @@ rise.evaluate.meta = function(yone,
       sone = gamma.s.one.study,
       szero = gamma.s.zero.study,
       alpha,
-      epsilon = epsilon.meta,
+      epsilon = epsilon_arg,
+      power.want.s = power.want.s.study,
       u.y.hyp,
       alternative,
       paired = paired.study
@@ -283,6 +322,7 @@ rise.evaluate.meta = function(yone,
     # Extract relevant screening results
     rise.evaluate.results.allstudies[[ix]] <- data.frame(
       "study" = study,
+      "epsilon" = gamma.s.result.study$epsilon.used,
       "marker" = "gamma",
       "n" = length(yone.study) + length(yzero.study),
       "u.y" = gamma.s.result.study$u.y,
@@ -326,6 +366,22 @@ rise.evaluate.meta = function(yone,
     
     evaluation.metrics.study = evaluation.metrics.study %>%
       filter(sd != 0)
+  }
+  
+  # Calculate average epsilon for meta-analysis
+  if (epsilon.meta.mode == "mean.power") {
+    epsilon.df = evaluation.metrics.study %>%
+      dplyr::select(study, epsilon) %>%
+      distinct()
+    
+    epsilon.meta = mean(epsilon.df$epsilon)
+    
+    message(
+      "Using value ",
+      round(epsilon.meta, 3),
+      " for epsilon.meta, based on the mean of
+            epsilon values across studies requiring specified power."
+    )
   }
   
   # Now do meta-analysis on these results
@@ -471,8 +527,8 @@ rise.evaluate.meta = function(yone,
       coord_fixed(ratio = 1) +
       labs(
         title = "Treatment effects on primary response and combined marker on evaluation data",
-        x = "Treatment effect on primary outcome",
-        y = "Treatment effect on combined marker",
+        x = "Treatment effect on combined marker",
+        y = "Treatment effect on primary endpoint",
         size = "Study N",
         fill = NULL
       ) +
@@ -499,6 +555,7 @@ rise.evaluate.meta = function(yone,
     df.gamma.temp = evaluation.metrics.meta %>%
       mutate(
         study = paste0("Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"),
+        epsilon = epsilon.meta,
         delta = mu.delta,
         ci.lower = ci.delta.lower,
         ci.upper = ci.delta.upper,

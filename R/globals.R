@@ -56,7 +56,12 @@ if (getRversion() >= "2.15.1") {
       "return.evaluate.results",
       "n_studies",
       "summary.ci.lower",
-      "summary.ci.upper"
+      "summary.ci.upper",
+      "epsilon.meta.mode",
+      "epsilon",
+      "epsilon.used",
+      "logp",
+      "sig"
     )
   )
 }

@@ -23,8 +23,13 @@
 #'   surrogate candidate. Either this or \code{epsilon.study} argument must be specified.
 #' @param epsilon.study numeric in (0,1) - non-inferiority margin for determining surrogate validity in the
 #'   within-study screening phase. Either this or \code{power.want.s.study} argument must be specified.
-#' @param epsilon.meta numeric in (0,1) - non-inferiority margin for determining surrogate validity
-#'   in the meta-analysis stage. Must be specified.
+#' @param epsilon.meta.mode character string specifying the mode to choose the value of the acceptable margin defined
+#' by epsilon. By default, this is set to "user", where the value of epsilon is fixed by the user, defined by the
+#' value of the argument \code{epsilon.meta}. The alternative is to set this as "mean.power", which corresponds to
+#' taking the mean value of epsilon across studies such that the power to detect departures from the null within
+#' each study is defined by the \code{power.want.s.study} argument.
+#' @param epsilon.meta numeric in (0,1) - fixed non-inferiority margin for determining surrogate validity
+#'   in the meta-analysis stage.
 #' @param u.y.hyp hypothesised value of the treatment effect on the primary response on the probability
 #'   scale. If not given, it will be estimated based on the observations.
 #' @param p.correction character. Method for p-value adjustment (see \code{p.adjust()} function).
@@ -59,6 +64,10 @@
 #'   When \code{"none"}, the weights are set to 1 for every marker.
 #' @param normalise.weights logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 #'   all the weights such that the maximum weight is 1, which can help with interpretability.
+#' @param return.screen.plot logical flag. If \code{TRUE} (default), returns a forest plot of the top predictors, sorted by p-value,
+#'   from the screening stage. The number of predictors to display is given by the \code{screen.plot.topN} argument, which has default
+#'   value 15.
+#' @param screen.plot.topN number of predictors to display in the screening results figure, default value is 15.
 #' @param return.forest.plot logical flag. If \code{TRUE} (default), a forest plot of the effect sizes for the
 #' combined signature across studies, with its meta-analysis summary measure and prediction interval, will be included in the output.
 #' @param return.fit.plot logical flag. If \code{TRUE} (default), a plot of the effects on the primary response
@@ -116,6 +125,7 @@ rise.screen.meta = function(yone,
                             alpha = 0.05,
                             power.want.s.study = NULL,
                             epsilon.study = NULL,
+                            epsilon.meta.mode = "user",
                             epsilon.meta = NULL,
                             u.y.hyp = NULL,
                             p.correction = "BH",
@@ -127,6 +137,8 @@ rise.screen.meta = function(yone,
                             return.all.screen = TRUE,
                             return.all.weights = FALSE,
                             weight.mode = "diff.epsilon",
+                            return.screen.plot = TRUE,
+                            screen.plot.topN = 15,
                             normalise.weights = TRUE,
                             return.forest.plot = TRUE,
                             return.fit.plot = TRUE,
@@ -164,9 +176,38 @@ rise.screen.meta = function(yone,
     stop("Must specify either epsilon.study or power.want.s.study.")
   }
   
-  # Check that epsilon.meta is specified
-  if (is.null(epsilon.meta)) {
-    stop("Must specify epsilon.meta.")
+  # Check that epsilon.meta is specified if the user mode is desired.
+  if (epsilon.meta.mode == "user" & is.null(epsilon.meta)) {
+    stop("You have requsted a user-defined epsilon.meta, but you have not provided it.")
+  }
+  
+  # Check that the power is specified if the mean.power approach for deciding epsilon is desired.
+  if (epsilon.meta.mode == "mean.power" &
+      is.null(power.want.s.study)) {
+    stop(
+      "You have requested the epsilon to be computed based on the within study power,
+         but you have not provided the argument power.want.s.study."
+    )
+  }
+  
+  # Print a message if both mean.power mode is selected but epsilon.meta also specified
+  if (epsilon.meta.mode == "mean.power" &
+      !is.null(epsilon.meta)) {
+    message(
+      "You have selected the mean power approach to compute epsilon meta,
+            but you have also specified epsilon.meta. Note that this value will be
+            overwritten and the mean epsilon across studies defined by the power will
+            be used instead."
+    )
+  }
+  
+  # If both power.want.s.study and epsilon.study, prioritise power and put a message
+  if (!is.null(epsilon.study) & !is.null(power.want.s.study)) {
+    message(
+      "You provided both epsilon.study and power.want.s.study.
+            Using the power argument to compute within-study epsilon by default.
+            If you wanted to fix the epsilon yourself, set power.want.s.study = NULL."
+    )
   }
   
   ## Check same number of samples in primary response and surrogates
@@ -233,13 +274,19 @@ rise.screen.meta = function(yone,
       paired.study = ifelse(study %in% paired.studies, TRUE, FALSE)
     }
     
+    epsilon_arg <- if (is.null(power.want.s.study)) {
+      epsilon.study
+    } else {
+      NULL
+    }
+    
     # Apply RISE screen function
     screen.results.study = rise.screen(
       yone = yone.study,
       yzero = yzero.study,
       sone = sone.study,
       szero = szero.study,
-      epsilon = epsilon.study,
+      epsilon = epsilon_arg,
       alpha = alpha,
       power.want.s = power.want.s.study,
       u.y.hyp = u.y.hyp,
@@ -258,6 +305,7 @@ rise.screen.meta = function(yone,
     rise.screen.results.allstudies[[ix]] <- screen.results.study[["screening.metrics"]] %>%
       mutate(study = study) %>%
       dplyr::select(study,
+                    epsilon,
                     marker,
                     n,
                     u.y,
@@ -274,6 +322,22 @@ rise.screen.meta = function(yone,
   
   # Bind the per-study results into a dataframe
   rise.screen.results.allstudies.df <- bind_rows(rise.screen.results.allstudies)
+  
+  # Calculate average epsilon for meta-analysis
+  if (epsilon.meta.mode == "mean.power") {
+    epsilon.df = rise.screen.results.allstudies.df %>%
+      dplyr::select(study, epsilon) %>%
+      distinct()
+    
+    epsilon.meta = mean(epsilon.df$epsilon)
+    
+    message(
+      "Using value ",
+      round(epsilon.meta, 3),
+      " for epsilon.meta, based on the mean of
+            epsilon values across studies requiring specified power."
+    )
+  }
   
   if (return.study.similarity.plot) {
     sig_list <- rise.screen.results.allstudies.df %>%
@@ -456,6 +520,88 @@ rise.screen.meta = function(yone,
     filter(p.adjusted < alpha) %>%
     pull(marker)
   
+  # If screening plot desired, return it
+  if (return.screen.plot) {
+    p_floor <- 1e-2   # practical lower bound for the colour scale
+    
+    df_plot <- delta.reml.df %>%
+      arrange(p.unadjusted) %>%
+      slice_head(n = screen.plot.topN) %>%
+      mutate(
+        marker = factor(marker, levels = rev(unique(marker))),
+        logp    = -log10(p.adjusted),
+        logp    = pmin(logp, -log10(p_floor)),
+        sig     = p.adjusted < alpha
+      )
+    
+    # Legend breaks on the natural p-value scale
+    p_breaks <- c(1, 0.1, 0.05, p_floor)
+    logp_breaks <- -log10(p_breaks)
+    
+    # Colour positions corresponding to the log scale
+    colour_values <- scales::rescale(c(0, -log10(0.05), -log10(0.01), -log10(p_floor)), from = c(0, -log10(p_floor)))
+    
+    screen.plot <- ggplot(df_plot, aes(x = mu.delta, y = marker)) +
+      geom_segment(
+        aes(
+          x = ci.delta.lower,
+          xend = ci.delta.upper,
+          y = marker,
+          yend = marker,
+          color = logp
+        ),
+        linewidth = 1.1,
+        lineend = "round"
+      ) +
+      geom_point(aes(color = logp, shape = sig), size = 4) +
+      geom_vline(
+        xintercept = c(-epsilon.meta, epsilon.meta),
+        linetype = "dashed",
+        color = "red",
+        linewidth = 0.8
+      ) +
+      geom_vline(
+        xintercept = 0,
+        color = "black",
+        linewidth = 0.5
+      ) +
+      scale_color_gradientn(
+        colors = c("#2C7BB6", "grey80", "#D7191C", "#8B0000"),
+        values = colour_values,
+        limits = c(0, -log10(p_floor)),
+        breaks = logp_breaks,
+        labels = c("1", "0.1", "0.05", paste0(
+          "<", format(p_floor, scientific = TRUE)
+        )),
+        name = "Adjusted p-value",
+        oob = scales::squish
+      ) +
+      scale_shape_manual(
+        values = c(`TRUE` = 17, `FALSE` = 19),
+        labels = c(`TRUE` = expression(p < 0.05), `FALSE` = expression(p >= 0.05)),
+        name = "Significance"
+      ) +
+      labs(
+        x = expression("Pooled effect " ~ mu[delta]),
+        y = NULL,
+        title = glue::glue("Screening results: Top {screen.plot.topN} markers")
+      ) +
+      xlim(-1, 1) +
+      theme_minimal(base_size = 20) +
+      theme(
+        plot.title         = element_text(
+          size = 25,
+          face = "bold",
+          hjust = 0.5
+        ),
+        axis.text.y        = element_text(size = 13),
+        axis.text.x        = element_text(size = 15),
+        axis.title.x       = element_text(size = 30),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor   = element_blank()
+      )
+  }
+  
   # If no significant markers, stop
   if (length(significant.markers) == 0) {
     message(
@@ -465,6 +611,11 @@ rise.screen.meta = function(yone,
     
     gamma.s.plot <- list("similarity.plots" = if (return.study.similarity.plot) {
       similarity.plots
+    } else {
+      NULL
+    },
+    "screen.plot" = if (return.screen.plot) {
+      screen.plot
     } else {
       NULL
     })
@@ -544,13 +695,19 @@ rise.screen.meta = function(yone,
       paired.study = ifelse(study %in% paired.studies, TRUE, FALSE)
     }
     
+    epsilon_arg <- if (is.null(power.want.s.study)) {
+      epsilon.study
+    } else {
+      NULL
+    }
+    
     # Apply surrogate test to gamma
     gamma.results.study = test.surrogate.extension(
       yone = yone.study,
       yzero = yzero.study,
       sone = sone.study,
       szero = szero.study,
-      epsilon = epsilon.study,
+      epsilon = epsilon_arg,
       alpha = alpha,
       power.want.s = power.want.s.study,
       u.y.hyp = u.y.hyp,
@@ -570,15 +727,18 @@ rise.screen.meta = function(yone,
         ci.delta.upper = ci.delta2,
         p = p.delta
       ) %>%
-      dplyr::select(study,
-                    n,
-                    delta.estimate,
-                    sd.delta,
-                    ci.delta.lower,
-                    ci.delta.upper,
-                    u.y,
-                    u.s,
-                    p)
+      dplyr::select(
+        study,
+        epsilon.used,
+        n,
+        delta.estimate,
+        sd.delta,
+        ci.delta.lower,
+        ci.delta.upper,
+        u.y,
+        u.s,
+        p
+      )
     # Increase index
     ix <- ix + 1L
     
@@ -633,7 +793,7 @@ rise.screen.meta = function(yone,
   )[["results"]]
   
   study.weights = data.frame(delta.reml.gamma$weights.tau.relative)
-  #jump
+  
   # Initialise temporary dataframe for results
   df.gamma.temp = data.frame(
     "study" = paste0("Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"),
@@ -658,6 +818,7 @@ rise.screen.meta = function(yone,
   # Initialise dataframe for evaluation output
   evaluation.metrics.meta = data.frame(
     "marker" = "gamma",
+    "epsilon" = epsilon.meta,
     "n.studies" = delta.reml.gamma$n.studies,
     "mu.delta" = delta.reml.gamma$mu.delta,
     "se.delta" = delta.reml.gamma$se.delta,
@@ -753,8 +914,8 @@ rise.screen.meta = function(yone,
       coord_fixed(ratio = 1) +
       labs(
         title = "Treatment effects on primary response and combined marker on training data",
-        x = "Treatment effect on primary outcome",
-        y = "Treatment effect on combined marker",
+        x = "Treatment effect on combined marker",
+        y = "Treatment effect on primary endpoint",
         size = "Study N",
         fill = NULL
       ) +
@@ -1192,6 +1353,11 @@ rise.screen.meta = function(yone,
   }
   
   gamma.s.plot <- list(
+    "screen.plot" = if (return.screen.plot) {
+      screen.plot
+    } else {
+      NULL
+    },
     "fit.plot" = if (return.fit.plot) {
       fit.plot
     } else {
