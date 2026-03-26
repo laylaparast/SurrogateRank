@@ -61,7 +61,13 @@ if (getRversion() >= "2.15.1") {
       "epsilon",
       "epsilon.used",
       "logp",
-      "sig"
+      "sig",
+      "xmin",
+      "xmax",
+      "ymax",
+      "ymin",
+      "label",
+      "xintercept"
     )
   )
 }

@@ -529,9 +529,12 @@ rise.screen.meta = function(yone,
       slice_head(n = screen.plot.topN) %>%
       mutate(
         marker = factor(marker, levels = rev(unique(marker))),
-        logp    = -log10(p.adjusted),
-        logp    = pmin(logp, -log10(p_floor)),
-        sig     = p.adjusted < alpha
+        logp   = -log10(p.unadjusted),
+        logp   = pmin(logp, -log10(p_floor)),
+        sig    = p.adjusted < alpha,
+        # Clip the CI to the plotting range
+        ci.delta.lower = pmax(ci.delta.lower, -1),
+        ci.delta.upper = pmin(ci.delta.upper, 1),
       )
     
     # Legend breaks on the natural p-value scale
@@ -541,64 +544,122 @@ rise.screen.meta = function(yone,
     # Colour positions corresponding to the log scale
     colour_values <- scales::rescale(c(0, -log10(0.05), -log10(0.01), -log10(p_floor)), from = c(0, -log10(p_floor)))
     
+    epsilon.meta.rounded = round(epsilon.meta, 3)
+    
+    # Create a small data frame for equivalence margin lines (for legend)
+    vline_df <- data.frame(
+      xintercept = c(-epsilon.meta, epsilon.meta),
+      label = paste0("Equivalence margin ±", epsilon.meta.rounded)
+    )
+    
+    # Light shading for equivalence region
+    shade_df <- data.frame(
+      xmin = -epsilon.meta,
+      xmax = epsilon.meta,
+      ymin = 0.5, 
+      ymax = nrow(df_plot) + 0.5
+    )
+    
+    # Build the plot
     screen.plot <- ggplot(df_plot, aes(x = mu.delta, y = marker)) +
+      
+      # Shaded equivalence interval (behind points and CIs)
+      geom_rect(
+        data = shade_df,
+        aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+        fill = "#B4B4B4",
+        alpha = 0.3,
+        inherit.aes = FALSE,
+        show.legend = FALSE
+      ) +
+      
+      # Horizontal CI segments
       geom_segment(
-        aes(
-          x = ci.delta.lower,
-          xend = ci.delta.upper,
-          y = marker,
-          yend = marker,
-          color = logp
-        ),
+        aes(x = ci.delta.lower, xend = ci.delta.upper,
+            y = marker, yend = marker,
+            color = logp),
         linewidth = 1.1,
         lineend = "round"
       ) +
-      geom_point(aes(color = logp, shape = sig), size = 4) +
-      geom_vline(
-        xintercept = c(-epsilon.meta, epsilon.meta),
-        linetype = "dashed",
-        color = "red",
-        linewidth = 0.8
+      
+      # Points for estimates
+      geom_point(
+        aes(color = logp, shape = sig, size = sig)
       ) +
+      
+      # Equivalence margin lines (with legend)
+      geom_vline(
+        data = vline_df,
+        aes(xintercept = xintercept, linetype = label),
+        color = "#2E2E2E",
+        linewidth = 1,
+        alpha = 0.8,
+        show.legend = c(linetype = TRUE, color = FALSE, shape = FALSE)
+      ) +
+      
+      # Vertical zero reference line
       geom_vline(
         xintercept = 0,
-        color = "black",
-        linewidth = 0.5
+        color = "#B4B4B4",
+        linewidth = 0.5,
+        alpha = 0.5
       ) +
+      
+      # Colour scale for raw p-values
       scale_color_gradientn(
         colors = c("#2C7BB6", "grey80", "#D7191C", "#8B0000"),
         values = colour_values,
         limits = c(0, -log10(p_floor)),
         breaks = logp_breaks,
-        labels = c("1", "0.1", "0.05", paste0(
-          "<", format(p_floor, scientific = TRUE)
-        )),
-        name = "Adjusted p-value",
+        labels = c("1", "0.1", "0.05", paste0("<", format(p_floor, scientific = TRUE))),
+        name = "Raw p-value",
         oob = scales::squish
       ) +
+      
+      # Shape scale for adjusted significance
       scale_shape_manual(
-        values = c(`TRUE` = 17, `FALSE` = 19),
-        labels = c(`TRUE` = expression(p < 0.05), `FALSE` = expression(p >= 0.05)),
-        name = "Significance"
+        values = c(`TRUE` = 18, `FALSE` = 19),
+        labels = c(
+          `TRUE` = bquote("Adjusted p" <= .(alpha)),
+          `FALSE` = bquote("Adjusted p" > .(alpha))
+        ),
+        name = "Multiplicity-corrected \nsignificance",
+        guide = guide_legend(
+          override.aes = list(size = c(5, 4))  # sizes shown in legend
+        )
       ) +
+      scale_size_manual(
+        values = c(`TRUE` = 5, `FALSE` = 4),
+        guide = "none"  # no separate size legend
+      ) +
+      # Linetype scale for equivalence margins
+      scale_linetype_manual(
+        name = NULL,
+        values = 1  
+      ) +
+      
+      # Labels and title
       labs(
         x = expression("Pooled effect " ~ mu[delta]),
         y = NULL,
         title = glue::glue("Screening results: Top {screen.plot.topN} markers")
       ) +
-      xlim(-1, 1) +
+      
+      # Plot limits
+      coord_cartesian(xlim = c(-1, 1)) +
+      
+      # Theme
       theme_minimal(base_size = 20) +
       theme(
-        plot.title         = element_text(
-          size = 25,
-          face = "bold",
-          hjust = 0.5
-        ),
+        plot.title         = element_text(size = 25, face = "bold", hjust = 0.5),
         axis.text.y        = element_text(size = 13),
         axis.text.x        = element_text(size = 15),
         axis.title.x       = element_text(size = 30),
         panel.grid.major.y = element_blank(),
-        panel.grid.minor   = element_blank()
+        panel.grid.minor   = element_blank(),
+        legend.title       = element_text(size = 15),
+        legend.text        = element_text(size = 13),
+        plot.caption       = element_text(size = 13, hjust = 0)
       )
   }
   
@@ -846,8 +907,12 @@ rise.screen.meta = function(yone,
     n_vals <- gamma.results.allstudies.df$n
     
     # Helper functions
-    round_down <- function(x, step) { floor(x / step) * step }
-    round_up   <- function(x, step) { ceiling(x / step) * step }
+    round_down <- function(x, step) {
+      floor(x / step) * step
+    }
+    round_up   <- function(x, step) {
+      ceiling(x / step) * step
+    }
     
     if (length(unique(n_vals)) == 1) {
       # All sample sizes equal → single legend key
@@ -863,8 +928,12 @@ rise.screen.meta = function(yone,
         
         # Make mid value the closest integer to median but strictly between min and max
         mid_val <- round(median_val)
-        if (mid_val <= min_val) { mid_val <- min_val + 1 }
-        if (mid_val >= max_val) { mid_val <- max_val - 1 }
+        if (mid_val <= min_val) {
+          mid_val <- min_val + 1
+        }
+        if (mid_val >= max_val) {
+          mid_val <- max_val - 1
+        }
         
         legend_breaks <- c(min_val, mid_val, max_val)
         legend_labels <- as.character(legend_breaks)
@@ -1134,7 +1203,8 @@ rise.screen.meta = function(yone,
       ) +
       geom_point(
         data = filter(
-          plot.df,!is.summary &
+          plot.df,
+          !is.summary &
             study != paste0(100 * (1 - alpha), "% Prediction interval")
         ),
         shape = 16,
