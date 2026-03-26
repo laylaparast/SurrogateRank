@@ -300,7 +300,7 @@ rise.evaluate.meta = function(yone,
     }
     
     epsilon_arg <- if (is.null(power.want.s.study)) {
-      epsilon.study
+      epsilon.meta
     } else {
       NULL
     }
@@ -370,6 +370,7 @@ rise.evaluate.meta = function(yone,
   
   # Calculate average epsilon for meta-analysis
   if (epsilon.meta.mode == "mean.power") {
+    
     epsilon.df = evaluation.metrics.study %>%
       dplyr::select(study, epsilon) %>%
       distinct()
@@ -382,6 +383,117 @@ rise.evaluate.meta = function(yone,
       " for epsilon.meta, based on the mean of
             epsilon values across studies requiring specified power."
     )
+    
+    # Now repeat the meta-analysis using this value of epsilon across all studies
+    
+    # Initialise results storage
+    rise.evaluate.results.allstudies =  vector("list", length(all.study.names)) # prepare storage for study results
+    ix <- 1L # initialise index
+    
+    gamma.s = vector("list", length(all.study.names))
+    
+    for (study in all.study.names) {
+      yzero.study = yzero[studyzero == study] # Extract study samples
+      yone.study = yone[studyone == study]
+      
+      sone.study = sone[studyone == study, , drop = FALSE]
+      szero.study = szero[studyzero == study, , drop = FALSE]
+      
+      ## First combine the surrogate candidates together to standardise based on all samples
+      s.combined.study <- rbind(sone.study, szero.study)
+      ## First standardise
+      s.standardised.study <- scale(s.combined.study)
+      ## Now weight
+      if (evaluate.weights) {
+        # extract weights
+        w_vec <- setNames(screening.weights$weight, screening.weights$marker)
+        
+        # Now standardise by multiplying by weights
+        s.standardised.study <- sweep(s.standardised.study, 2, w_vec[colnames(s.standardised.study)], FUN = "*")
+      }
+      
+      # Form gamma.s by summing over the standardised, weighted predictors
+      gamma.s.study <- rowSums(s.standardised.study)
+      
+      # Now extract back the data by treatment group
+      sone.standardised.study <- s.standardised.study[c(1:nrow(sone.study)), ]
+      szero.standardised.study <- s.standardised.study[-c(1:nrow(sone.study)), ]
+      gamma.s.one.study <- gamma.s.study[c(1:nrow(sone.study))]
+      gamma.s.zero.study <- gamma.s.study[-c(1:nrow(sone.study))]
+      
+      gamma.s[[ix]] = list("gamma.s.one" = gamma.s.one.study, "gamma.s.zero" = gamma.s.zero.study)
+      
+      # Check if this study is paired
+      if (is.null(paired.studies)) {
+        paired.study = FALSE
+      } else {
+        paired.study = ifelse(study %in% paired.studies, TRUE, FALSE)
+      }
+      
+      epsilon_arg <- epsilon.meta
+      
+      # Test gamma.s as a surrogate
+      gamma.s.result.study <- test.surrogate.extension(
+        yone = yone.study,
+        yzero = yzero.study,
+        sone = gamma.s.one.study,
+        szero = gamma.s.zero.study,
+        alpha,
+        epsilon = epsilon_arg,
+        power.want.s = NULL,
+        u.y.hyp,
+        alternative,
+        paired = paired.study
+      )
+      
+      # Extract relevant screening results
+      rise.evaluate.results.allstudies[[ix]] <- data.frame(
+        "study" = study,
+        "epsilon" = gamma.s.result.study$epsilon.used,
+        "marker" = "gamma",
+        "n" = length(yone.study) + length(yzero.study),
+        "u.y" = gamma.s.result.study$u.y,
+        "u.s" = gamma.s.result.study$u.s,
+        "delta" = gamma.s.result.study$delta.estimate,
+        "ci.lower" = gamma.s.result.study$ci.delta[1],
+        "ci.upper" = gamma.s.result.study$ci.delta[2],
+        "sd" = gamma.s.result.study$sd.delta,
+        "p.unadjusted" = gamma.s.result.study$p.delta
+      )
+      
+      # Increase index
+      ix <- ix + 1L
+      
+    }
+    
+    names(gamma.s) = all.study.names
+    
+    # Bind the per-study results into a dataframe
+    evaluation.metrics.study <- bind_rows(rise.evaluate.results.allstudies) %>%
+      mutate(p.adjusted = p.adjust(p.unadjusted, method = p.correction))
+    
+    # If some studies have exactly 0 standard error, report this
+    if (any(evaluation.metrics.study$sd == 0)) {
+      sd0.studies = evaluation.metrics.study %>%
+        filter(sd == 0) %>%
+        pull(study) %>%
+        unique()
+      
+      message(
+        paste0(
+          "Note: studies '",
+          paste(sd0.studies, collapse = ", "),
+          "' have degenerate (exactly 0) estimation of standard error",
+          " for the combined marker gamma. ",
+          "This is likely due to small sample size and perfect pairwise",
+          " concordance between gamma and the primary endpoint.",
+          " These studies will be removed from the meta-analysis."
+        )
+      )
+      
+      evaluation.metrics.study = evaluation.metrics.study %>%
+        filter(sd != 0)
+    }
   }
   
   # Now do meta-analysis on these results
@@ -743,9 +855,24 @@ rise.evaluate.meta = function(yone,
         plot.margin = unit(c(1.2, 0.6, 1, 1.2), "lines")
       )
     
-    # Middle panel: forest plot (uses delta and ci.* columns)
+    epsilon.meta.rounded <- round(epsilon.meta, 3)
+    
+    shade_df <- data.frame(
+      xmin = -epsilon.meta,
+      xmax = epsilon.meta,
+      ymin = y.min,
+      ymax = y.max
+    )
+    
     forest.mid <- ggplot(plot.df, aes(x = delta, y = y)) +
-      # study CIs (will be NA for summary and PI rows)
+      geom_rect(
+        data = shade_df,
+        aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+        inherit.aes = FALSE,
+        fill = "#B4B4B4",
+        alpha = 0.3,
+        color = NA
+      ) +
       geom_errorbar(
         aes(xmin = ci.lower, xmax = ci.upper),
         width = 0.15,
@@ -754,13 +881,13 @@ rise.evaluate.meta = function(yone,
       ) +
       geom_point(
         data = filter(
-          plot.df,!is.summary &
+          plot.df,
+          !is.summary &
             study != paste0(100 * (1 - alpha), "% Prediction interval")
         ),
         shape = 16,
         size = 3.5
       ) +
-      # pooled summary drawn as diamond polygon (width = CI)
       geom_polygon(
         data = diamond.df,
         aes(x = x, y = y),
@@ -768,7 +895,6 @@ rise.evaluate.meta = function(yone,
         fill = "#CCCCCC",
         color = "black"
       ) +
-      # blue dotted vertical line from pooled estimate upward
       geom_segment(
         data = filter(plot.df, is.summary),
         aes(
@@ -782,11 +908,8 @@ rise.evaluate.meta = function(yone,
         color = "#4C78A8",
         linewidth = 0.8
       ) +
-      # prediction interval row (red horizontal line, no central point)
       geom_errorbar(
-        data = filter(plot.df, study == paste0(
-          100 * (1 - alpha), "% Prediction interval"
-        )),
+        data = filter(plot.df, study == paste0(100 * (1 - alpha), "% Prediction interval")),
         aes(xmin = pi.lower, xmax = pi.upper),
         width = 0.15,
         linewidth = 1.5,
@@ -831,9 +954,9 @@ rise.evaluate.meta = function(yone,
       ) +
       geom_vline(
         xintercept = c(-epsilon.meta, epsilon.meta),
-        linetype = "dashed",
-        color = "red",
-        linewidth = 0.7
+        linetype = "solid",
+        color = "#2E2E2E",
+        linewidth = 1
       ) +
       geom_vline(
         xintercept = 0,
@@ -943,14 +1066,13 @@ rise.evaluate.meta = function(yone,
       align = "h"
     )
     
-    info.text <- paste0("Tau-squared = ",
-                        tau2.txt,
-                        "   |   I-Squared = ",
-                        I2.txt,
-                        "%   |  Lin's CCC =  ",
-                        ccc.txt,
-                        "   |   k = ",
-                        k)
+    info.text <- bquote(
+      "Tau-squared =" ~ .(tau2.txt) ~
+        "|" ~ "I-Squared =" ~ .(I2.txt) ~ "%" ~
+        "|" ~ "CCC =" ~ .(ccc.txt) ~
+        "|" ~ epsilon == .(epsilon.meta.rounded)
+    )
+    
     info.grob <- ggdraw() + draw_label(
       info.text,
       x = 0.5,

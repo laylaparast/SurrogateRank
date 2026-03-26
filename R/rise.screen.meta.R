@@ -756,11 +756,13 @@ rise.screen.meta = function(yone,
       paired.study = ifelse(study %in% paired.studies, TRUE, FALSE)
     }
     
-    epsilon_arg <- if (is.null(power.want.s.study)) {
-      epsilon.study
-    } else {
-      NULL
-    }
+    # epsilon_arg <- if (is.null(power.want.s.study)) {
+    #   epsilon.meta
+    # } else {
+    #   NULL
+    # }
+    
+    epsilon_arg = epsilon.meta
     
     # Apply surrogate test to gamma
     gamma.results.study = test.surrogate.extension(
@@ -770,7 +772,7 @@ rise.screen.meta = function(yone,
       szero = szero.study,
       epsilon = epsilon_arg,
       alpha = alpha,
-      power.want.s = power.want.s.study,
+      power.want.s = NULL,
       u.y.hyp = u.y.hyp,
       alternative = alternative,
       paired = paired.study
