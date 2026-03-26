@@ -1165,6 +1165,17 @@ rise.screen.meta = function(yone,
     x.min <- -1
     x.max <- 1
     
+    # Add shaded acceptable interval with legend
+    shade_df <- data.frame(
+      xmin = -epsilon.meta,
+      xmax = epsilon.meta,
+      ymin = y.min,   # bottom of plot
+      ymax = y.max    # top of plot
+    )
+    
+    # Define a factor for legend
+    shade_df$label <- paste0("Acceptable interval ±", epsilon.meta.rounded)
+    
     # Left panel: study labels, bold the summary
     left.labels <- ggplot(plot.df, aes(y = y)) +
       geom_text(
@@ -1193,6 +1204,7 @@ rise.screen.meta = function(yone,
         plot.margin = unit(c(1.2, 0.6, 1, 1.2), "lines")
       )
     
+    # Middle panel: forest plot (uses delta.estimate and ci.delta.* columns)
     # Middle panel: forest plot (uses delta.estimate and ci.delta.* columns)
     forest.mid <- ggplot(plot.df, aes(x = delta.estimate, y = y)) +
       geom_errorbar(
@@ -1289,6 +1301,22 @@ rise.screen.meta = function(yone,
         xintercept = 0,
         linetype = "solid",
         color = "grey60"
+      ) +
+      # Shaded region for acceptable interval
+      geom_rect(
+        data = shade_df,
+        aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+        alpha = 0.3,
+        inherit.aes = FALSE,
+        fill = "#B4B4B4",
+        color = NA
+      ) +
+      # Solid vertical lines for the edges of acceptable interval
+      geom_vline(
+        xintercept = c(-epsilon.meta, epsilon.meta),
+        linetype = "solid",
+        color = "#2E2E2E",
+        linewidth = 1
       )
     
     # Right panel: p-value / weight / N
@@ -1394,14 +1422,15 @@ rise.screen.meta = function(yone,
       align = "h"
     )
     
-    info.text <- paste0("Tau-squared = ",
-                        tau2.txt,
-                        "   |   I-Squared = ",
-                        I2.txt,
-                        "%   |  Lin's CCC =  ",
-                        ccc.txt,
-                        "   |   k = ",
-                        k)
+    epsilon.meta.rounded = round(epsilon.meta, 3)
+    
+    info.text <- bquote(
+      "Tau-squared =" ~ .(tau2.txt) ~
+        "|" ~ "I-Squared =" ~ .(I2.txt) ~ "%" ~
+        "|" ~ "CCC =" ~ .(ccc.txt) ~
+        "|" ~ epsilon == .(epsilon.meta.rounded)
+    )
+    
     info.grob <- ggdraw() + draw_label(
       info.text,
       x = 0.5,
