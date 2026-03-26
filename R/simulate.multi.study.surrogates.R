@@ -29,6 +29,8 @@
 #'   uniformly across the entire invalid region. If \code{TRUE}, generates invalid surrogates
 #'   at the boundary values defined by epsilon. This is the worst-case scenario for invalid
 #'   surrogates and thus is useful for checking the calibration of the method.
+#' @param invalid_mean_discrete vector of discrete numeric values to sample true
+#' means of valid surrogates at. These values must be greater or equal in absolute value than epsilon.
 #' @param valid_mean_discrete vector of discrete numeric values to sample true
 #' means of valid surrogates at. These values must be smaller in absolute value than epsilon.
 #'
@@ -82,6 +84,7 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
                                             u_nu_max = 0.1,
                                             prop_invalid_under = 0.5,
                                             invalid_at_boundary = FALSE,
+                                            invalid_mean_discrete = NULL,
                                             valid_mean_discrete = NULL) {
   ## --- input checks
   if (prop_valid < 0 || prop_valid > 1) {
@@ -107,6 +110,12 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
   if (!is.null(valid_mean_discrete)) {
     if (any(abs(valid_mean_discrete) >= epsilon)) {
       stop("All values in valid_mean_discrete must be smaller in absolute value than epsilon.")
+    }
+  }
+  
+  if (!is.null(valid_mean_discrete)) {
+    if (any(abs(valid_mean_discrete) < epsilon)) {
+      stop("All values in invalid_mean_discrete must be greater or equal in absolute value than epsilon.")
     }
   }
   
@@ -142,6 +151,12 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
     if (any(s_j == 0)) {
       if (invalid_at_boundary) {
         mu_j[invalid_idx[s_j == 0]] = -epsilon
+      } else if (!is.null(invalid_mean_discrete)) {
+        mu_j[invalid_idx[s_j == 0]] <- sample(
+          invalid_mean_discrete[invalid_mean_discrete < 0],
+          size = sum(s_j == 0),
+          replace = TRUE
+        )
       } else {
         mu_j[invalid_idx[s_j == 0]] <- runif(sum(s_j == 0), min = -1, max = -epsilon)  # negative -> overestimates
       }
@@ -150,6 +165,12 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
     if (any(s_j == 1)) {
       if (invalid_at_boundary) {
         mu_j[invalid_idx[s_j == 1]] = epsilon
+      } else if (!is.null(invalid_mean_discrete)) {
+        mu_j[invalid_idx[s_j == 1]] <- sample(
+          invalid_mean_discrete[invalid_mean_discrete > 0],
+          size = sum(s_j == 1),
+          replace = TRUE
+        )
       } else {
         mu_j[invalid_idx[s_j == 1]] <- runif(sum(s_j == 1), min = epsilon, max = 1)    # positive -> underestimates
       }
