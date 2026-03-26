@@ -302,7 +302,17 @@ rise.screen.meta = function(yone,
     )
     
     # Extract relevant screening results
-    rise.screen.results.allstudies[[ix]] <- screen.results.study[["screening.metrics"]] %>%
+    study_metrics <- screen.results.study[["screening.metrics"]]
+    
+    if (!"epsilon" %in% names(study_metrics)) {
+      study_metrics$epsilon <- if (!is.null(epsilon_arg)) {
+        epsilon_arg
+      } else {
+        NA_real_
+      }
+    }
+    
+    rise.screen.results.allstudies[[ix]] <- study_metrics %>%
       mutate(study = study) %>%
       dplyr::select(study,
                     epsilon,
@@ -556,7 +566,7 @@ rise.screen.meta = function(yone,
     shade_df <- data.frame(
       xmin = -epsilon.meta,
       xmax = epsilon.meta,
-      ymin = 0.5, 
+      ymin = 0.5,
       ymax = nrow(df_plot) + 0.5
     )
     
@@ -566,7 +576,12 @@ rise.screen.meta = function(yone,
       # Shaded equivalence interval (behind points and CIs)
       geom_rect(
         data = shade_df,
-        aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+        aes(
+          xmin = xmin,
+          xmax = xmax,
+          ymin = ymin,
+          ymax = ymax
+        ),
         fill = "#B4B4B4",
         alpha = 0.3,
         inherit.aes = FALSE,
@@ -575,17 +590,23 @@ rise.screen.meta = function(yone,
       
       # Horizontal CI segments
       geom_segment(
-        aes(x = ci.delta.lower, xend = ci.delta.upper,
-            y = marker, yend = marker,
-            color = logp),
+        aes(
+          x = ci.delta.lower,
+          xend = ci.delta.upper,
+          y = marker,
+          yend = marker,
+          color = logp
+        ),
         linewidth = 1.1,
         lineend = "round"
       ) +
       
       # Points for estimates
-      geom_point(
-        aes(color = logp, shape = sig, size = sig)
-      ) +
+      geom_point(aes(
+        color = logp,
+        shape = sig,
+        size = sig
+      )) +
       
       # Equivalence margin lines (with legend)
       geom_vline(
@@ -594,7 +615,11 @@ rise.screen.meta = function(yone,
         color = "#2E2E2E",
         linewidth = 1,
         alpha = 0.8,
-        show.legend = c(linetype = TRUE, color = FALSE, shape = FALSE)
+        show.legend = c(
+          linetype = TRUE,
+          color = FALSE,
+          shape = FALSE
+        )
       ) +
       
       # Vertical zero reference line
@@ -611,7 +636,9 @@ rise.screen.meta = function(yone,
         values = colour_values,
         limits = c(0, -log10(p_floor)),
         breaks = logp_breaks,
-        labels = c("1", "0.1", "0.05", paste0("<", format(p_floor, scientific = TRUE))),
+        labels = c("1", "0.1", "0.05", paste0(
+          "<", format(p_floor, scientific = TRUE)
+        )),
         name = "Raw p-value",
         oob = scales::squish
       ) +
@@ -619,13 +646,15 @@ rise.screen.meta = function(yone,
       # Shape scale for adjusted significance
       scale_shape_manual(
         values = c(`TRUE` = 18, `FALSE` = 19),
+        limits = c(TRUE, FALSE),
+        drop = FALSE,
         labels = c(
           `TRUE` = bquote("Adjusted p" <= .(alpha)),
           `FALSE` = bquote("Adjusted p" > .(alpha))
         ),
         name = "Multiplicity-corrected \nsignificance",
         guide = guide_legend(
-          override.aes = list(size = c(5, 4))  # sizes shown in legend
+          override.aes = list(size = c(5, 4))
         )
       ) +
       scale_size_manual(
@@ -633,10 +662,7 @@ rise.screen.meta = function(yone,
         guide = "none"  # no separate size legend
       ) +
       # Linetype scale for equivalence margins
-      scale_linetype_manual(
-        name = NULL,
-        values = 1  
-      ) +
+      scale_linetype_manual(name = NULL, values = 1) +
       
       # Labels and title
       labs(
@@ -651,7 +677,11 @@ rise.screen.meta = function(yone,
       # Theme
       theme_minimal(base_size = 20) +
       theme(
-        plot.title         = element_text(size = 25, face = "bold", hjust = 0.5),
+        plot.title         = element_text(
+          size = 25,
+          face = "bold",
+          hjust = 0.5
+        ),
         axis.text.y        = element_text(size = 13),
         axis.text.x        = element_text(size = 15),
         axis.title.x       = element_text(size = 30),
@@ -1171,7 +1201,8 @@ rise.screen.meta = function(yone,
     shade_df <- data.frame(
       xmin = -epsilon.meta,
       xmax = epsilon.meta,
-      ymin = y.min,   # bottom of plot
+      ymin = y.min,
+      # bottom of plot
       ymax = y.max    # top of plot
     )
     
@@ -1217,8 +1248,7 @@ rise.screen.meta = function(yone,
       ) +
       geom_point(
         data = filter(
-          plot.df,
-          !is.summary &
+          plot.df,!is.summary &
             study != paste0(100 * (1 - alpha), "% Prediction interval")
         ),
         shape = 16,
@@ -1307,7 +1337,12 @@ rise.screen.meta = function(yone,
       # Shaded region for acceptable interval
       geom_rect(
         data = shade_df,
-        aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+        aes(
+          xmin = xmin,
+          xmax = xmax,
+          ymin = ymin,
+          ymax = ymax
+        ),
         alpha = 0.3,
         inherit.aes = FALSE,
         fill = "#B4B4B4",
