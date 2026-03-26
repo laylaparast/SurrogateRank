@@ -845,29 +845,30 @@ rise.screen.meta = function(yone,
     
     n_vals <- gamma.results.allstudies.df$n
     
-    round_down_10 <- function(x) {
-      floor(x / 10) * 10
-    }
-    round_up_10   <- function(x) {
-      ceiling(x / 10) * 10
-    }
-    round_up_50   <- function(x) {
-      ceiling(x / 50) * 50
-    }
+    # Helper functions
+    round_down <- function(x, step) { floor(x / step) * step }
+    round_up   <- function(x, step) { ceiling(x / step) * step }
     
     if (length(unique(n_vals)) == 1) {
       # All sample sizes equal → single legend key
-      legend_breaks <- unique(n_vals)
-      legend_labels <- as.character(unique(n_vals))
+      {
+        legend_breaks <- unique(n_vals)
+        legend_labels <- as.character(unique(n_vals))
+      }
     } else {
-      min_label <- max(round_down_10(min(n_vals)), min(n_vals))
-      max_label <- round_up_10(max(n_vals))
-      mid_label <- round_up_50(median(n_vals))
-      
-      legend_breaks <- c(min(n_vals), mid_label, max(n_vals))
-      legend_labels <- c(as.character(min_label),
-                         as.character(mid_label),
-                         as.character(max_label))
+      {
+        min_val <- min(n_vals)
+        max_val <- max(n_vals)
+        median_val <- median(n_vals)
+        
+        # Make mid value the closest integer to median but strictly between min and max
+        mid_val <- round(median_val)
+        if (mid_val <= min_val) { mid_val <- min_val + 1 }
+        if (mid_val >= max_val) { mid_val <- max_val - 1 }
+        
+        legend_breaks <- c(min_val, mid_val, max_val)
+        legend_labels <- as.character(legend_breaks)
+      }
     }
     
     # Plot with CCC annotation and improved sizing
