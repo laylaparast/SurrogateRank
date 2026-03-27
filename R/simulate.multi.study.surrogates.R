@@ -108,13 +108,13 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
   }
   
   if (!is.null(valid_mean_discrete)) {
-    if (any(abs(valid_mean_discrete) >= epsilon)) {
-      stop("All values in valid_mean_discrete must be smaller in absolute value than epsilon.")
+    if (any(abs(valid_mean_discrete) > epsilon)) {
+      stop("All values in valid_mean_discrete must be smaller or equal in absolute value than epsilon.")
     }
   }
   
-  if (!is.null(valid_mean_discrete)) {
-    if (any(abs(valid_mean_discrete) < epsilon)) {
+  if (!is.null(invalid_mean_discrete)) {
+    if (any(abs(invalid_mean_discrete) < epsilon)) {
       stop("All values in invalid_mean_discrete must be greater or equal in absolute value than epsilon.")
     }
   }

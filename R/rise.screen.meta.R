@@ -668,7 +668,7 @@ rise.screen.meta = function(yone,
       labs(
         x = expression("Pooled effect " ~ mu[delta]),
         y = NULL,
-        title = glue::glue("Screening results: Top {screen.plot.topN} markers")
+        title = glue::glue("Meta-analysis screening results: Top {screen.plot.topN} markers")
       ) +
       
       # Plot limits
