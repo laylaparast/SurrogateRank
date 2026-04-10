@@ -161,10 +161,12 @@ delta.reml.meta <- function(delta = NULL,
   # -------------------------
   # pooled estimates
   # -------------------------
-  w.tau <- if (meta.analysis.method == "RE")
+  w.tau <- if (meta.analysis.method == "RE"){
     1 / (vi + tau2.hat)
-  else
+  }
+  else {
     1 / vi
+  }
   mu.delta.hat <- sum(w.tau * delta) / sum(w.tau)
   var.conv <- 1 / sum(w.tau)
   se.conv <- sqrt(var.conv)
@@ -199,7 +201,7 @@ delta.reml.meta <- function(delta = NULL,
       p.lower <- NULL
       p.upper <- NULL
     }
-  } else if (test == "z") {
+  } else if (meta.analysis.method == "RE" & test == "z") {
     se.final <- se.conv
     zcrit <- qnorm(1 - alpha)
     ci.final <- c(mu.delta.hat - zcrit * se.final,
@@ -217,7 +219,7 @@ delta.reml.meta <- function(delta = NULL,
       p.lower <- NULL
       p.upper <- NULL
     }
-  } else {
+  } else if (meta.analysis.method == "RE" & test == "knha"){
     # Default: Hartung-Knapp, t-distribution
     se.final <- se.HK
     tcrit <- qt(1 - alpha, df = n.studies - 1)

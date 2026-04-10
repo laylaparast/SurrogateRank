@@ -68,6 +68,8 @@
 #'   from the screening stage. The number of predictors to display is given by the \code{screen.plot.topN} argument, which has default
 #'   value 15.
 #' @param screen.plot.topN number of predictors to display in the screening results figure, default value is 15.
+#' @param screen.plot.point.estimate logical flag. If \code{FALSE} (default), uses the \code{screen.plot.topN} argument to determine how many
+#' markers to display on the screen plot. Otherwise, plots all the markers with a point estimate within the equivalence region.
 #' @param return.forest.plot logical flag. If \code{TRUE} (default), a forest plot of the effect sizes for the
 #' combined signature across studies, with its meta-analysis summary measure and prediction interval, will be included in the output.
 #' @param return.fit.plot logical flag. If \code{TRUE} (default), a plot of the effects on the primary response
@@ -139,6 +141,7 @@ rise.screen.meta = function(yone,
                             weight.mode = "diff.epsilon",
                             return.screen.plot = TRUE,
                             screen.plot.topN = 15,
+                            screen.plot.point.estimate = FALSE,
                             normalise.weights = TRUE,
                             return.forest.plot = TRUE,
                             return.fit.plot = TRUE,
@@ -534,6 +537,12 @@ rise.screen.meta = function(yone,
   if (return.screen.plot) {
     p_floor <- 1e-2   # practical lower bound for the colour scale
     
+    if(screen.plot.point.estimate){
+      screen.plot.topN = delta.reml.df %>% 
+        filter(abs(mu.delta) <= epsilon.meta) %>% 
+        nrow()
+    }
+    
     df_plot <- delta.reml.df %>%
       arrange(p.unadjusted) %>%
       slice_head(n = screen.plot.topN) %>%
@@ -645,7 +654,7 @@ rise.screen.meta = function(yone,
       
       # Shape scale for adjusted significance
       scale_shape_manual(
-        values = c(`TRUE` = 18, `FALSE` = 19),
+        values = c(`TRUE` = 18, `FALSE` = 1),
         limits = c(TRUE, FALSE),
         drop = FALSE,
         labels = c(

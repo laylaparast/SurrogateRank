@@ -29,6 +29,7 @@ rise.screen.meta(
   weight.mode = "diff.epsilon",
   return.screen.plot = TRUE,
   screen.plot.topN = 15,
+  screen.plot.point.estimate = FALSE,
   normalise.weights = TRUE,
   return.forest.plot = TRUE,
   return.fit.plot = TRUE,
@@ -121,6 +122,9 @@ from the screening stage. The number of predictors to display is given by the \c
 value 15.}
 
 \item{screen.plot.topN}{number of predictors to display in the screening results figure, default value is 15.}
+
+\item{screen.plot.point.estimate}{logical flag. If \code{FALSE} (default), uses the \code{screen.plot.topN} argument to determine how many
+markers to display on the screen plot. Otherwise, plots all the markers with a point estimate within the equivalence region.}
 
 \item{normalise.weights}{logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 all the weights such that the maximum weight is 1, which can help with interpretability.}
