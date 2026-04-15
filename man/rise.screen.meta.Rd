@@ -2,8 +2,7 @@
 % Please edit documentation in R/rise.screen.meta.R
 \name{rise.screen.meta}
 \alias{rise.screen.meta}
-\title{Function to perform the screening stage of RISE-meta : Meta-Analysis of Rank-Based Identification of
-High-Dimensional Surrogate Markers}
+\title{Function to perform the screening stage of RISE-meta : Meta-Analysis of High-Dimensional Surrogate Markers}
 \usage{
 rise.screen.meta(
   yone,

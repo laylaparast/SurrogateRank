@@ -1,5 +1,4 @@
-#' Function to perform the evaluation stage of RISE-meta : Meta-Analysis of Rank-Based Identification of
-#' High-Dimensional Surrogate Markers
+#' Function to perform the evaluation stage of RISE-meta : Meta-Analysis of High-Dimensional Surrogate Markers
 #'
 #' @param yone numeric vector of primary response values in the treated participants
 #' @param yzero numeric vector of primary response values in the untreated participants

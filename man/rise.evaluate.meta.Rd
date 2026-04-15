@@ -2,8 +2,7 @@
 % Please edit documentation in R/rise.evaluate.meta.R
 \name{rise.evaluate.meta}
 \alias{rise.evaluate.meta}
-\title{Function to perform the evaluation stage of RISE-meta : Meta-Analysis of Rank-Based Identification of
-High-Dimensional Surrogate Markers}
+\title{Function to perform the evaluation stage of RISE-meta : Meta-Analysis of High-Dimensional Surrogate Markers}
 \usage{
 rise.evaluate.meta(
   yone,
@@ -143,8 +142,7 @@ returns evaluation plots as a list
 }
 }
 \description{
-Function to perform the evaluation stage of RISE-meta : Meta-Analysis of Rank-Based Identification of
-High-Dimensional Surrogate Markers
+Function to perform the evaluation stage of RISE-meta : Meta-Analysis of High-Dimensional Surrogate Markers
 }
 \examples{
 data("example.data.highdim.multistudy.ipd")

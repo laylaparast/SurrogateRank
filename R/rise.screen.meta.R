@@ -1,5 +1,4 @@
-#' Function to perform the screening stage of RISE-meta : Meta-Analysis of Rank-Based Identification of
-#' High-Dimensional Surrogate Markers
+#' Function to perform the screening stage of RISE-meta : Meta-Analysis of High-Dimensional Surrogate Markers
 #'
 #' @description The RISE screening algorithm is applied to each study using a rank-based measure of
 #' treatment effect similarity. In the second stage, these effect estimates are combined using a
