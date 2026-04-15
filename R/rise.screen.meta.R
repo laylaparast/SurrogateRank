@@ -109,15 +109,14 @@
 #' @author Arthur Hughes
 #'
 #' @examples
-#' # Load high-dimensional example data
-# data("example.data.highdim.multistudy")
-# yone <- example.data.highdim.multistudy$y1
-# yzero <- example.data.highdim.multistudy$y0
-# sone <- example.data.highdim.multistudy$s1
-# szero <- example.data.highdim.multistudy$s0
-# studyone <- example.data.highdim.multistudy$study1
-# studyzero <- example.data.highdim.multistudy$study0
-# rise.meta.screen.result <- rise.screen.meta(yone, yzero, sone, szero, studyone, studyzero, epsilon.study = 0.2, epsilon.meta = 0.2, n.cores = 12)
+#' data("example.data.highdim.multistudy.ipd")
+#' yone <- example.data.highdim.multistudy.ipd$y1
+#' yzero <- example.data.highdim.multistudy.ipd$y0
+#' sone <- example.data.highdim.multistudy.ipd$s1
+#' szero <- example.data.highdim.multistudy.ipd$s0
+#' studyone <- example.data.highdim.multistudy.ipd$study1
+#' studyzero <- example.data.highdim.multistudy.ipd$study0
+#' rise.meta.screen.result <- rise.screen.meta(yone, yzero, sone, szero, studyone, studyzero, epsilon.study = 0.2, epsilon.meta = 0.2, n.cores = 12)
 rise.screen.meta = function(yone,
                             yzero,
                             sone,

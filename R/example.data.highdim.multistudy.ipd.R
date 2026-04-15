@@ -2,7 +2,7 @@
 #'
 #' A simulated high‑dimensional dataset for demonstrating the RISE-Meta methodology
 #' implemented in \pkg{SurrogateRank}. The data contains primary response and
-#' 1000 surrogate candidates from 25 treated individuals and 25 untreated individuals across
+#' 100 surrogate candidates from 25 treated individuals and 25 untreated individuals across
 #' 5 different studies,
 #' where 10% of the surrogate candidates are "valid".
 #'

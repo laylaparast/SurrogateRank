@@ -84,18 +84,17 @@
 #' @author Arthur Hughes
 #'
 #' @examples
-#' # Load high-dimensional example data
-# data("example.data.highdim.multistudy")
-# yone <- example.data.highdim.multistudy$y1
-# yzero <- example.data.highdim.multistudy$y0
-# sone <- example.data.highdim.multistudy$s1
-# szero <- example.data.highdim.multistudy$s0
-# studyone <- example.data.highdim.multistudy$study1
-# studyzero <- example.data.highdim.multistudy$study0
-# rise.meta.screen.result <- rise.screen.meta(yone, yzero, sone, szero, studyone, studyzero, epsilon.study = 0.2, epsilon.meta = 0.2, n.cores = 12)
-# markers = rise.meta.screen.result[["significant.markers"]]
-# screening.weights = rise.meta.screen.result[["screening.weights"]]
-# rise.meta.evaluate.result <- rise.evaluate.meta(yone, yzero, sone, szero, studyone, studyzero, epsilon.meta = 0.2, markers = markers, screening.weights = screening.weights, return.all.evaluate = T, epsilon.study = 0.1, n.cores = 12)
+#' data("example.data.highdim.multistudy.ipd")
+#' yone <- example.data.highdim.multistudy.ipd$y1
+#' yzero <- example.data.highdim.multistudy.ipd$y0
+#' sone <- example.data.highdim.multistudy.ipd$s1
+#' szero <- example.data.highdim.multistudy.ipd$s0
+#' studyone <- example.data.highdim.multistudy.ipd$study1
+#' studyzero <- example.data.highdim.multistudy.ipd$study0
+#' rise.meta.screen.result <- rise.screen.meta(yone, yzero, sone, szero, studyone, studyzero, epsilon.study = 0.2, epsilon.meta = 0.2, n.cores = 12)
+#' markers = rise.meta.screen.result[["significant.markers"]]
+#' screening.weights = rise.meta.screen.result[["screening.weights"]]
+#' rise.meta.evaluate.result <- rise.evaluate.meta(yone, yzero, sone, szero, studyone, studyzero, epsilon.meta = 0.2, markers = markers, screening.weights = screening.weights, epsilon.study = 0.2, n.cores = 12)
 rise.evaluate.meta = function(yone,
                               yzero,
                               sone,
@@ -123,6 +122,13 @@ rise.evaluate.meta = function(yone,
                               return.fit.plot = TRUE,
                               show.pooled.effect = TRUE,
                               meta.analysis.method = "RE") {
+  
+  # message("epsilon.meta.mode at entry:")
+  # str(epsilon.meta.mode)
+  # message("epsilon.meta at entry:")
+  # str(epsilon.meta)
+  # print(match.call())
+  
   # DATA FORMATTING #
   ## Convert dataframes to numeric matrices
   if (is.data.frame(sone) | is.data.frame(szero)) {
@@ -170,28 +176,35 @@ rise.evaluate.meta = function(yone,
   }
   
   # Check that epsilon.meta is specified if the user mode is desired.
-  if (epsilon.meta.mode == "user" & is.null(epsilon.meta)) {
-    stop("You have requsted a user-defined epsilon.meta, but you have not provided it.")
-  }
-  
-  # Check that the power is specified if the mean.power approach for deciding epsilon is desired.
-  if (epsilon.meta.mode == "mean.power" &
-      is.null(power.want.s.study)) {
-    stop(
-      "You have requested the epsilon to be computed based on the within study power,
-         but you have not provided the argument power.want.s.study."
-    )
-  }
-  
-  # Print a message if both mean.power mode is selected but epsilon.meta also specified
-  if (epsilon.meta.mode == "mean.power" &
-      !is.null(epsilon.meta)) {
-    message(
-      "You have selected the mean power approach to compute epsilon meta,
-            but you have also specified epsilon.meta. Note that this value will be
-            overwritten and the mean epsilon across studies defined by the power will
-            be used instead."
-    )
+  # Check epsilon.meta.mode validity and consistency
+  if (!is.null(epsilon.meta.mode)) {
+    
+    # Force scalar character
+    if (length(epsilon.meta.mode) != 1) {
+      stop("epsilon.meta.mode must be a single value: 'user' or 'mean.power'.")
+    }
+    
+    # USER MODE CHECK
+    if (identical(epsilon.meta.mode, "user")) {
+      if (is.null(epsilon.meta)) {
+        stop("You have requested a user-defined epsilon.meta, but you have not provided it.")
+      }
+    }
+    
+    # MEAN POWER MODE CHECK
+    if (identical(epsilon.meta.mode, "mean.power")) {
+      
+      if (is.null(power.want.s.study)) {
+        stop("You have requested mean.power mode but did not provide power.want.s.study.")
+      }
+      
+      if (!is.null(epsilon.meta)) {
+        message(
+          "You selected mean.power mode but also provided epsilon.meta. ",
+          "epsilon.meta will be overwritten using the mean across studies."
+        )
+      }
+    }
   }
   
   # If both power.want.s.study and epsilon.study, prioritise power and put a message

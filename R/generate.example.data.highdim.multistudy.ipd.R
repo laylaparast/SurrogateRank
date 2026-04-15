@@ -101,5 +101,8 @@ generate.example.data.highdim.multistudy.ipd = function(M,
     hyp = data[[1]]$hyp
   )
   
+  colnames(combined$s0) = paste0("marker", seq(1:p))
+  colnames(combined$s1) = paste0("marker", seq(1:p))
+  
   return(combined)
 }
