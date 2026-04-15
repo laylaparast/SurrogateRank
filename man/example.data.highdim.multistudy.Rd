@@ -21,7 +21,7 @@ data("example.data.highdim.multistudy", package = "SurrogateRank")
 }
 \description{
 A simulated high-dimensional, multi-study dataset for demonstrating the RISE-meta methodology
-implemented in \pkg{SurrogateRank}, generated with the simulate.multi.study.surrogates() function.
+implemented in \pkg{SurrogateRank}, generated with the generate.example.data.highdim.multistudy() function.
 The data contains treatment effect measures on the primary endpoint and on 500 surrogate candidates,
 where the first 50 of these candidates are "valid" surrogates.
 }

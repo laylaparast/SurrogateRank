@@ -1,6 +1,6 @@
-#' Simulate multi-study surrogate marker trial-level effects
+#' Generate high-dimensional multi-study surrogate marker trial-level effects
 #'
-#' Generates simulated trial-level treatment effect discrepancies for multiple
+#' Generates simulated trial-level treatment effects for multiple
 #' surrogate markers across multiple studies, including both valid and invalid
 #' surrogates. This function implements a hierarchical random-effects model:
 #' true trial-level effects are drawn from marker-specific means with
@@ -33,7 +33,7 @@
 #' means of valid surrogates at. These values must be greater or equal in absolute value than epsilon.
 #' @param valid_mean_discrete vector of discrete numeric values to sample true
 #' means of valid surrogates at. These values must be smaller in absolute value than epsilon.
-#'
+#' @param seed numeric giving a seed for reproducibility
 #'
 #' @return A list with the following components:
 #' \describe{
@@ -60,7 +60,7 @@
 #' \eqn{\hat{\delta}_{m,j} \sim N(\delta_{m,j}^{true}, \nu_j / n_m)}.
 #'
 #' @examples
-#' res <- simulate.multi.study.surrogates(
+#' res <- generate.example.data.highdim.multistudy(
 #'   epsilon = 0.2,
 #'   M = 5,
 #'   sample_sizes = c(25, 50, 100, 150, 250),
@@ -71,7 +71,7 @@
 #' head(res$mu.true)
 #'
 #' @export
-simulate.multi.study.surrogates <- function(epsilon = 0.2,
+generate.example.data.highdim.multistudy <- function(epsilon = 0.2,
                                             M = 5,
                                             sample_sizes = c(25, 50, 100, 150, 250),
                                             J = 500,
@@ -85,7 +85,11 @@ simulate.multi.study.surrogates <- function(epsilon = 0.2,
                                             prop_invalid_under = 0.5,
                                             invalid_at_boundary = FALSE,
                                             invalid_mean_discrete = NULL,
-                                            valid_mean_discrete = NULL) {
+                                            valid_mean_discrete = NULL,
+                                            seed = 12345) {
+  # Set seed for reproducibility
+  set.seed(seed)
+  
   ## --- input checks
   if (prop_valid < 0 || prop_valid > 1) {
     stop("prop_valid must be between 0 and 1.")
