@@ -670,9 +670,16 @@ rise.evaluate.meta = function(yone,
     # Extract results for all studies with positive standard error
     evaluation.metrics.study.temp = evaluation.metrics.study
     
+    # Initialise temporary dataframe for results
+    study_label = if (alternative == "two.sided"){
+      paste0("Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)")
+    } else {
+      paste0("Pooled effect (", 100 * (1 - alpha), "% C.I.)")
+    }
+    
     df.gamma.temp = evaluation.metrics.meta %>%
       mutate(
-        study = paste0("Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"),
+        study = study_label,
         epsilon = epsilon.meta,
         delta = mu.delta,
         ci.lower = ci.delta.lower,
@@ -707,10 +714,8 @@ rise.evaluate.meta = function(yone,
     ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
     
     # Separate studies vs summary
-    studies.df <- evaluation.metrics.study2 %>% filter(study != paste0("Pooled effect (", 100 *
-                                                                         (1 - 2 * alpha), "% C.I.)"))
-    summary.row <- evaluation.metrics.study2 %>% filter(study == paste0("Pooled effect (", 100 *
-                                                                          (1 - 2 * alpha), "% C.I.)"))
+    studies.df <- evaluation.metrics.study2 %>% filter(study != study_label)
+    summary.row <- evaluation.metrics.study2 %>% filter(study == study_label)
     
     # sort studies by effect size from most negative to most positive
     studies.df <- studies.df %>% arrange(delta)
@@ -723,9 +728,7 @@ rise.evaluate.meta = function(yone,
     # Prepare combined plotting df and standard display labels
     plot.df <- bind_rows(studies.df, summary.row) %>%
       mutate(
-        is.summary = (study == paste0(
-          "Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"
-        )),
+        is.summary = (study == study_label),
         study.label = study,
         label.pval = ifelse(
           is.na(p.unadjusted),
@@ -822,16 +825,35 @@ rise.evaluate.meta = function(yone,
     
     # Plot parameters
     base.text.size <- 14
-    y.min <- if (show.pooled.effect)
+    y.min <- if (show.pooled.effect){
       - 1.5
-    else
+    } else {
       0
+    }
     y.max <- k + 1
     rel.w.left  <- 0.45
     rel.w.mid   <- 1.10
     rel.w.right <- 0.55
     x.min <- -1
     x.max <- 1
+    
+    epsilon.meta.rounded <- round(epsilon.meta, 3)
+    
+    # Add shaded acceptable interval with legend
+    # Light shading for equivalence region
+    if (alternative == "two.sided") {
+      lower_bound = -epsilon.meta
+    } else {
+      lower_bound = -1
+    }
+    
+    shade_df <- data.frame(
+      xmin = lower_bound,
+      xmax = epsilon.meta,
+      ymin = y.min,
+      # bottom of plot
+      ymax = y.max    # top of plot
+    )
     
     # Left panel: study labels, bold the summary
     left.labels <- ggplot(plot.df, aes(y = y)) +
@@ -860,15 +882,6 @@ rise.evaluate.meta = function(yone,
         panel.background = element_rect(fill = "white", colour = NA),
         plot.margin = unit(c(1.2, 0.6, 1, 1.2), "lines")
       )
-    
-    epsilon.meta.rounded <- round(epsilon.meta, 3)
-    
-    shade_df <- data.frame(
-      xmin = -epsilon.meta,
-      xmax = epsilon.meta,
-      ymin = y.min,
-      ymax = y.max
-    )
     
     forest.mid <- ggplot(plot.df, aes(x = delta, y = y)) +
       geom_rect(
@@ -959,7 +972,7 @@ rise.evaluate.meta = function(yone,
         plot.margin = unit(c(1.2, 0.6, 1, 0.6), "lines")
       ) +
       geom_vline(
-        xintercept = c(-epsilon.meta, epsilon.meta),
+        xintercept = c(ifelse(alternative == "two.sided", -epsilon.meta, -2), epsilon.meta),
         linetype = "solid",
         color = "#2E2E2E",
         linewidth = 1

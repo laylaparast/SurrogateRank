@@ -592,7 +592,7 @@ rise.screen.meta = function(yone,
       geom_rect(
         data = shade_df,
         aes(
-          xmin = xmin_shade,
+          xmin = lower_bound,
           xmax = xmax,
           ymin = ymin,
           ymax = ymax
@@ -903,8 +903,14 @@ rise.screen.meta = function(yone,
   study.weights = data.frame(delta.reml.gamma$weights.tau.relative)
   
   # Initialise temporary dataframe for results
+  study_label = if (alternative == "two.sided"){
+    paste0("Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)")
+  } else {
+    paste0("Pooled effect (", 100 * (1 - alpha), "% C.I.)")
+  }
+  
   df.gamma.temp = data.frame(
-    "study" = paste0("Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"),
+    "study" = study_label,
     "n" = length(yone) + length(yzero),
     "delta.estimate" = delta.reml.gamma$mu.delta,
     "sd.delta" = delta.reml.gamma$se.delta,
