@@ -122,12 +122,6 @@ rise.evaluate.meta = function(yone,
                               show.pooled.effect = TRUE,
                               meta.analysis.method = "RE") {
   
-  # message("epsilon.meta.mode at entry:")
-  # str(epsilon.meta.mode)
-  # message("epsilon.meta at entry:")
-  # str(epsilon.meta)
-  # print(match.call())
-  
   # DATA FORMATTING #
   ## Convert dataframes to numeric matrices
   if (is.data.frame(sone) | is.data.frame(szero)) {
@@ -1140,6 +1134,9 @@ rise.evaluate.meta = function(yone,
     individual.metrics = NULL
   }
   
+  evaluation.metrics.meta  = evaluation.metrics.meta %>% 
+    select(-all_of(c("weights.tau", "weights.tau.relative", "weights.tau.sum"))) %>% 
+    distinct()
   
   return(
     list(
