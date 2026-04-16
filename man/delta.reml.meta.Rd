@@ -2,7 +2,7 @@
 % Please edit documentation in R/delta.reml.meta.R
 \name{delta.reml.meta}
 \alias{delta.reml.meta}
-\title{Function to compute and test random-effects meta-analysis summary of delta value estimates for a single marker}
+\title{Function to perform meta-analysis of summary statistics and hypothesis testing for a single marker}
 \usage{
 delta.reml.meta(
   delta = NULL,
@@ -71,7 +71,7 @@ such that each weight is a percentage adding to 100\%
 }
 }
 \description{
-Function to compute and test random-effects meta-analysis summary of delta value estimates for a single marker
+Function to perform meta-analysis of summary statistics and hypothesis testing for a single marker
 }
 \author{
 Arthur Hughes

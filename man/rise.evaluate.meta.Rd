@@ -152,10 +152,23 @@ sone <- example.data.highdim.multistudy.ipd$s1
 szero <- example.data.highdim.multistudy.ipd$s0
 studyone <- example.data.highdim.multistudy.ipd$study1
 studyzero <- example.data.highdim.multistudy.ipd$study0
-rise.meta.screen.result <- rise.screen.meta(yone, yzero, sone, szero, studyone, studyzero, epsilon.study = 0.2, epsilon.meta = 0.2, n.cores = 12)
+rise.meta.screen.result <- rise.screen.meta(
+yone, yzero, 
+sone, szero, 
+studyone, studyzero, 
+epsilon.study = 0.2, epsilon.meta = 0.2
+)
 markers = rise.meta.screen.result[["significant.markers"]]
 screening.weights = rise.meta.screen.result[["screening.weights"]]
-rise.meta.evaluate.result <- rise.evaluate.meta(yone, yzero, sone, szero, studyone, studyzero, epsilon.meta = 0.2, markers = markers, screening.weights = screening.weights, epsilon.study = 0.2, n.cores = 12)
+rise.meta.evaluate.result <- rise.evaluate.meta(
+yone, yzero, 
+sone, szero, 
+studyone, studyzero, 
+epsilon.meta = 0.2, 
+markers = markers, 
+screening.weights = screening.weights, 
+epsilon.study = 0.2
+)
 }
 \author{
 Arthur Hughes

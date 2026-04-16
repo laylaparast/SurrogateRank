@@ -36,7 +36,13 @@
 #' }
 #' 
 #' @examples
-#' res <- generate.example.data.highdim.multistudy.ipd(M = 5, n1 = 25, n0 = 25, p = 500, prop_valid = 1)
+#' res <- generate.example.data.highdim.multistudy.ipd(
+#' M = 5,
+#' n1 = 25,
+#' n0 = 25,
+#' p = 500,
+#' prop_valid = 1
+#' )
 #' dim(res$s1)       # (5 studies x 25 individuals = 125) x 500
 #' @export
 generate.example.data.highdim.multistudy.ipd = function(M,

@@ -78,6 +78,12 @@ Generates individual participant data for high-dimensional surrogate candidates 
 of two data generating processes, as described in Hughes A et al (2025) \url{doi:10.1002/sim.70241}.
 }
 \examples{
-res <- generate.example.data.highdim.multistudy.ipd(M = 5, n1 = 25, n0 = 25, p = 500, prop_valid = 1)
+res <- generate.example.data.highdim.multistudy.ipd(
+M = 5,
+n1 = 25,
+n0 = 25,
+p = 500,
+prop_valid = 1
+)
 dim(res$s1)       # (5 studies x 25 individuals = 125) x 500
 }

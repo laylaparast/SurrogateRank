@@ -115,7 +115,12 @@
 #' szero <- example.data.highdim.multistudy.ipd$s0
 #' studyone <- example.data.highdim.multistudy.ipd$study1
 #' studyzero <- example.data.highdim.multistudy.ipd$study0
-#' rise.meta.screen.result <- rise.screen.meta(yone, yzero, sone, szero, studyone, studyzero, epsilon.study = 0.2, epsilon.meta = 0.2, n.cores = 12)
+#' rise.meta.screen.result <- rise.screen.meta(
+#' yone, yzero, 
+#' sone, szero, 
+#' studyone, studyzero, 
+#' epsilon.study = 0.2, epsilon.meta = 0.2
+#' )
 rise.screen.meta = function(yone,
                             yzero,
                             sone,
@@ -568,7 +573,7 @@ rise.screen.meta = function(yone,
       lower_bound = -epsilon.meta
       vline_df <- data.frame(
         xintercept = c(-epsilon.meta, epsilon.meta),
-        label = paste0("Equivalence margin = ±", epsilon.meta.rounded)
+        label = paste0("Equivalence margin = +/-", epsilon.meta.rounded)
       )
     } else {
       lower_bound = -1
@@ -1233,7 +1238,7 @@ rise.screen.meta = function(yone,
     
     # Define a factor for legend
     if (alternative == "two.sided") {
-      shade_df$label <- paste0("Equivalence margin = ±", epsilon.meta.rounded)
+      shade_df$label <- paste0("Equivalence margin = +/-", epsilon.meta.rounded)
     } else {
       shade_df$label <- paste0("Equivalence margin = ", lower_bound)
     }

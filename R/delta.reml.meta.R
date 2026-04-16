@@ -1,4 +1,4 @@
-#' Function to compute and test random-effects meta-analysis summary of delta value estimates for a single marker
+#' Function to perform meta-analysis of summary statistics and hypothesis testing for a single marker
 #'
 #' @param delta numeric vector of delta values per study
 #' @param sd.delta numeric vector of standard error of delta values per study

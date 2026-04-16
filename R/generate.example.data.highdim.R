@@ -84,10 +84,10 @@ generate.example.data.highdim = function(n1,
       # ensure the covariance matrix is valid when all surrogates are requested valid
       if (p_valid == 1) {
         Sigma_valid = c(valid_sigma)
-        s1.valid = y1 +  mvrnorm(n = n1,
+        s1.valid = y1 +  MASS::mvrnorm(n = n1,
                                  mu = 0,
                                  Sigma = Sigma_valid)
-        s0.valid = y0 +  mvrnorm(n = n0,
+        s0.valid = y0 +  MASS::mvrnorm(n = n0,
                                  mu = 0,
                                  Sigma = Sigma_valid)
       } else if (p_valid > 1) {
@@ -99,7 +99,7 @@ generate.example.data.highdim = function(n1,
                           nrow = n1,
                           ncol = p_valid,
                           byrow = TRUE) +
-          mvrnorm(n = n1,
+          MASS::mvrnorm(n = n1,
                   mu = rep(0, p_valid),
                   Sigma = Sigma_valid)
         
@@ -108,7 +108,7 @@ generate.example.data.highdim = function(n1,
                           nrow = n0,
                           ncol = p_valid,
                           byrow = TRUE) +
-          mvrnorm(n = n0,
+          MASS::mvrnorm(n = n0,
                   mu = rep(0, p_valid),
                   Sigma = Sigma_valid)
       }
@@ -117,10 +117,10 @@ generate.example.data.highdim = function(n1,
       if (prop_valid != 1) {
         # if invalid surrogates required
         if (p_invalid > 1) {
-          s1.invalid = mvrnorm(n = n1,
+          s1.invalid = MASS::mvrnorm(n = n1,
                                mu = mm,
                                Sigma = Sigma_invalid)
-          s0.invalid = mvrnorm(n = n0,
+          s0.invalid = MASS::mvrnorm(n = n0,
                                mu = mm,
                                Sigma = Sigma_invalid)
         } else {
@@ -144,10 +144,10 @@ generate.example.data.highdim = function(n1,
     } else {
       # if no valid surrogates required
       # invalid surrogates
-      s1 = mvrnorm(n = n1,
+      s1 = MASS::mvrnorm(n = n1,
                    mu = mm,
                    Sigma = Sigma_invalid)
-      s0 = mvrnorm(n = n0,
+      s0 = MASS::mvrnorm(n = n0,
                    mu = mm,
                    Sigma = Sigma_invalid)
     }
@@ -182,7 +182,7 @@ generate.example.data.highdim = function(n1,
                         nrow = n1,
                         ncol = p_valid,
                         byrow = TRUE) +
-        mvrnorm(n = n1,
+        MASS::mvrnorm(n = n1,
                 mu = rep(0, p_valid),
                 Sigma = Sigma_valid)
       
@@ -190,7 +190,7 @@ generate.example.data.highdim = function(n1,
                         nrow = n0,
                         ncol = p_valid,
                         byrow = TRUE) +
-        mvrnorm(n = n0,
+        MASS::mvrnorm(n = n0,
                 mu = rep(0, p_valid),
                 Sigma = Sigma_valid)
       
