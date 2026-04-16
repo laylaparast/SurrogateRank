@@ -28,7 +28,7 @@
 #'          corresponds to a (1-2\code{alpha})*100% interval.
 #'   \item \code{ci.delta.lower} : numeric, lower confidence interval for mean of delta
 #'   \item \code{p.lower} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
-#'   testing the null hypothesis that \code{delta} is greater than \code{-epsilon}.
+#'   testing the null hypothesis that \code{delta} is less than \code{-epsilon}.
 #'   Value is \code{NULL} if \code{alternative} is \code{"less"}.
 #'   \item \code{p.upper} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
 #'   testing the null hypothesis that \code{delta} is less than \code{epsilon}.
@@ -186,8 +186,11 @@ delta.reml.meta <- function(delta = NULL,
   if (meta.analysis.method == "FE") {
     se.final <- se.conv
     zcrit <- qnorm(1 - alpha)
-    ci.final <- c(mu.delta.hat - zcrit * se.final,
-                  mu.delta.hat + zcrit * se.final)
+    if(alternative == "two.sided") {
+      ci.final <- c(max(-1, mu.delta.hat - zcrit * se.final), min(1, mu.delta.hat + zcrit * se.final))
+    } else {
+      ci.final <- c(-1, min(1, mu.delta.hat + zcrit * se.final))
+    }
     
     if (alternative == "two.sided") {
       T.L <- (mu.delta.hat + epsilon) / se.final
@@ -204,8 +207,11 @@ delta.reml.meta <- function(delta = NULL,
   } else if (meta.analysis.method == "RE" & test == "z") {
     se.final <- se.conv
     zcrit <- qnorm(1 - alpha)
-    ci.final <- c(mu.delta.hat - zcrit * se.final,
-                  mu.delta.hat + zcrit * se.final)
+    if(alternative == "two.sided") {
+      ci.final <- c(max(-1, mu.delta.hat - zcrit * se.final), min(1, mu.delta.hat + zcrit * se.final))
+    } else {
+      ci.final <- c(-1, min(mu.delta.hat + zcrit * se.final, 1))
+    }
     
     if (alternative == "two.sided") {
       T.L <- (mu.delta.hat + epsilon) / se.final
@@ -223,8 +229,14 @@ delta.reml.meta <- function(delta = NULL,
     # Default: Hartung-Knapp, t-distribution
     se.final <- se.HK
     tcrit <- qt(1 - alpha, df = n.studies - 1)
-    ci.final <- c(mu.delta.hat - tcrit * se.final,
-                  mu.delta.hat + tcrit * se.final)
+    
+    if(alternative == "two.sided") {
+      ci.final <- c(max(-1, mu.delta.hat - tcrit * se.final),
+                    min(1, mu.delta.hat + tcrit * se.final))
+    } else {
+      ci.final <- c(-1,
+                    min(1,mu.delta.hat + tcrit * se.final))
+    }
     
     if (alternative == "two.sided") {
       T.L <- (mu.delta.hat + epsilon) / se.final

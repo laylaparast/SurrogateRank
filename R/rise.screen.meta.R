@@ -563,15 +563,23 @@ rise.screen.meta = function(yone,
     
     epsilon.meta.rounded = round(epsilon.meta, 3)
     
-    # Create a small data frame for equivalence margin lines (for legend)
-    vline_df <- data.frame(
-      xintercept = c(-epsilon.meta, epsilon.meta),
-      label = paste0("Equivalence margin ±", epsilon.meta.rounded)
-    )
-    
     # Light shading for equivalence region
+    if (alternative == "two.sided") {
+      lower_bound = -epsilon.meta
+      vline_df <- data.frame(
+        xintercept = c(-epsilon.meta, epsilon.meta),
+        label = paste0("Equivalence margin = ±", epsilon.meta.rounded)
+      )
+    } else {
+      lower_bound = -1
+      vline_df <- data.frame(
+        xintercept = c(-2, epsilon.meta),
+        label = paste0("Equivalence bound = ", epsilon.meta.rounded)
+      )
+    }
+    
     shade_df <- data.frame(
-      xmin = -epsilon.meta,
+      xmin = lower_bound,
       xmax = epsilon.meta,
       ymin = 0.5,
       ymax = nrow(df_plot) + 0.5
@@ -584,7 +592,7 @@ rise.screen.meta = function(yone,
       geom_rect(
         data = shade_df,
         aes(
-          xmin = xmin,
+          xmin = xmin_shade,
           xmax = xmax,
           ymin = ymin,
           ymax = ymax
@@ -1070,7 +1078,8 @@ rise.screen.meta = function(yone,
                                                                              (1 - 2 * alpha), "% C.I.)"))
     
     # sort studies by effect size from most negative to most positive
-    studies.df <- studies.df %>% arrange(delta.estimate)
+    studies.df <- studies.df %>% 
+      arrange(delta.estimate)
     
     # vertical positions: top (k) down to 1; summary at y = 0
     k <- nrow(studies.df)
@@ -1205,8 +1214,15 @@ rise.screen.meta = function(yone,
     x.max <- 1
     
     # Add shaded acceptable interval with legend
+    # Light shading for equivalence region
+    if (alternative == "two.sided") {
+      lower_bound = -epsilon.meta
+    } else {
+      lower_bound = -1
+    }
+    
     shade_df <- data.frame(
-      xmin = -epsilon.meta,
+      xmin = lower_bound,
       xmax = epsilon.meta,
       ymin = y.min,
       # bottom of plot
@@ -1214,7 +1230,11 @@ rise.screen.meta = function(yone,
     )
     
     # Define a factor for legend
-    shade_df$label <- paste0("Acceptable interval ±", epsilon.meta.rounded)
+    if (alternative == "two.sided") {
+      shade_df$label <- paste0("Equivalence margin = ±", epsilon.meta.rounded)
+    } else {
+      shade_df$label <- paste0("Equivalence margin = ", lower_bound)
+    }
     
     # Left panel: study labels, bold the summary
     left.labels <- ggplot(plot.df, aes(y = y)) +
@@ -1244,7 +1264,6 @@ rise.screen.meta = function(yone,
         plot.margin = unit(c(1.2, 0.6, 1, 1.2), "lines")
       )
     
-    # Middle panel: forest plot (uses delta.estimate and ci.delta.* columns)
     # Middle panel: forest plot (uses delta.estimate and ci.delta.* columns)
     forest.mid <- ggplot(plot.df, aes(x = delta.estimate, y = y)) +
       geom_errorbar(
@@ -1331,12 +1350,6 @@ rise.screen.meta = function(yone,
         plot.margin = unit(c(1.2, 0.6, 1, 0.6), "lines")
       ) +
       geom_vline(
-        xintercept = c(-epsilon.meta, epsilon.meta),
-        linetype = "dashed",
-        color = "red",
-        linewidth = 0.7
-      ) +
-      geom_vline(
         xintercept = 0,
         linetype = "solid",
         color = "grey60"
@@ -1357,7 +1370,7 @@ rise.screen.meta = function(yone,
       ) +
       # Solid vertical lines for the edges of acceptable interval
       geom_vline(
-        xintercept = c(-epsilon.meta, epsilon.meta),
+        xintercept = c(ifelse(alternative == "two.sided", -epsilon.meta, -2), epsilon.meta),
         linetype = "solid",
         color = "#2E2E2E",
         linewidth = 1

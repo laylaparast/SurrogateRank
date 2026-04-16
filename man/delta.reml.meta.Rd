@@ -54,7 +54,7 @@ whereas the two-one-sided test (i.e. \code{alternative = "two.sided"})
 corresponds to a (1-2\code{alpha})*100\% interval.
 \item \code{ci.delta.lower} : numeric, lower confidence interval for mean of delta
 \item \code{p.lower} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
-testing the null hypothesis that \code{delta} is greater than \code{-epsilon}.
+testing the null hypothesis that \code{delta} is less than \code{-epsilon}.
 Value is \code{NULL} if \code{alternative} is \code{"less"}.
 \item \code{p.upper} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
 testing the null hypothesis that \code{delta} is less than \code{epsilon}.
