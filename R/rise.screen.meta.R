@@ -1078,10 +1078,8 @@ rise.screen.meta = function(yone,
     ccc <- (2 * cov(x, y)) / (var(x) + var(y) + (mean(x) - mean(y))^2)
     
     # Separate studies vs summary
-    studies.df <- gamma.results.allstudies.df2 %>% filter(study != paste0("Pooled effect (", 100 *
-                                                                            (1 - 2 * alpha), "% C.I.)"))
-    summary.row <- gamma.results.allstudies.df2 %>% filter(study == paste0("Pooled effect (", 100 *
-                                                                             (1 - 2 * alpha), "% C.I.)"))
+    studies.df <- gamma.results.allstudies.df2 %>% filter(study != study_label)
+    summary.row <- gamma.results.allstudies.df2 %>% filter(study == study_label)
     
     # sort studies by effect size from most negative to most positive
     studies.df <- studies.df %>% 
@@ -1095,9 +1093,7 @@ rise.screen.meta = function(yone,
     # Prepare combined plotting df and standard display labels
     plot.df <- bind_rows(studies.df, summary.row) %>%
       mutate(
-        is.summary = (study == paste0(
-          "Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)"
-        )),
+        is.summary = (study == study_label),
         study.label = study,
         label.pval = ifelse(is.na(p), "", formatC(
           p, format = "f", digits = 3
