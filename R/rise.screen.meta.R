@@ -247,7 +247,7 @@ rise.screen.meta = function(yone,
   
   # Check all specified paired studies have the same number of treated and untreated samples
   for (study in paired.studies) {
-    if (length(yone[paired.studies == study]) != length(yzero[paired.studies == study])) {
+    if (length(yone[studyone == study]) != length(yzero[studyzero == study])) {
       stop(
         paste0(
           "Paired mode is requested but the number of samples in yone does not match that of yzero in study '",
