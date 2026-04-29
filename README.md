@@ -11,6 +11,6 @@ in a Small Sample Setting. Biometrics, 80(1): ujad035, [doi:10.1093/biomtc/ujad0
 
 This approach was also extended to the high-dimensional setting. Details are described in Hughes A, Parast L, Thiébaut R, Hejblum BP (2025). RISE : Two-Step Rank-Based Identification of High-Dimensional Surrogate Markers Applied to Vaccinology. Statistics in Medicine, 44(20-22): e70241, [doi:10.1002/sim.70241](https://doi.org/10.1002/sim.70241). 
 
-Finally, these approaches were extended to the multi-trial setting using meta-analysis (manuscript to be submitted). 
+Finally, these approaches were extended to the multi-trial setting using meta-analysis (preprint link to be inserted before deployment). 
 
 Go here to view a tutorial for this package: [SurrogateRank Tutorial](https://htmlpreview.github.io/?https://github.com/laylaparast/SurrogateRank/blob/main/SurrogateRank_tutorial.html).  We also have a shiny app implementing these methods [here](https://parastlab.shinyapps.io/SurrogateRankApp/). 
