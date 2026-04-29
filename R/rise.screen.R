@@ -203,6 +203,7 @@ rise.screen <- function(yone,
     paired = paired
   )$u.y
   
+  u.s = u.y - results$delta
   results$u.y = u.y
   results$u.s = u.s
   results$n = length(yone) + length(yzero)
