@@ -47,8 +47,7 @@
 #'                              returned allowing the user to visualise the association between the
 #'                              composite surrogate on the individual-scale.
 #' @param evaluate.weights    logical flag. If \code{TRUE} (default), the composite surrogate is
-#'                            constructed with weights as the absolute value of the inverse of the
-#'                            delta values of each candidate, such that surrogates which are
+#'                            constructed with weights such that surrogates which are
 #'                            predicted to be stronger receive more weight.
 #' @param screening.weights   dataframe with columns \code{marker} and \code{weight} giving the weight
 #'                            in for the evaluation. Typically this is taken directly from the
@@ -74,12 +73,12 @@
 #' @author Arthur Hughes
 #' @examples
 #' # Load high-dimensional example data
-#' data("example.data.highdim")
-#' yone <- example.data.highdim$y1
-#' yzero <- example.data.highdim$y0
-#' sone <- example.data.highdim$s1
-#' szero <- example.data.highdim$s0
-#' rise.evaluate.result <- rise.evaluate(yone, yzero, sone, szero, power.want.s = 0.8)
+# data("example.data.highdim")
+# yone <- example.data.highdim$y1
+# yzero <- example.data.highdim$y0
+# sone <- example.data.highdim$s1
+# szero <- example.data.highdim$s0
+# rise.evaluate.result <- rise.evaluate(yone, yzero, sone, szero, power.want.s = 0.8)
 rise.evaluate <- function(yone,
                           yzero,
                           sone,
@@ -218,13 +217,30 @@ rise.evaluate <- function(yone,
     )
 
     rho.val <- round(cor(rank.df$response.rank, rank.df$gamma.rank), 2)
-
+    delta.val = gamma.s.evaluate[names(gamma.s.evaluate) == "delta"]
+    
+    #  Truncate delta to 1 significant figure 
+    cut_sig1 <- function(x) {
+      if (is.na(x)) return("NA")
+      if (x == 0) return("0")
+      sgn <- ifelse(x < 0, "-", "")
+      ax <- abs(x)
+      exponent <- floor(log10(ax))
+      mantissa <- ax / (10^exponent)           # in [1, 10)
+      mant1 <- floor(mantissa)                 # truncate to 1 significant digit
+      # safety: if mant1 becomes 0 due to numerical edge-case, set to 1
+      if (mant1 == 0) mant1 <- 1
+      paste0(sgn, mant1, "e", exponent)
+    }
+    
+    delta.label <- cut_sig1(delta.val)
+    
     gamma.s.plot <- rank.df %>%
       ggplot(aes(x = response.rank, y = gamma.rank, col = as.factor(treatment))) +
       geom_point(size = 5) +
       xlab("Primary Response (rank)") +
       ylab(expression(gamma[S] ~ "(rank)")) +
-      ggtitle("Ranks of primary response vs new surrogate in evaluation data") +
+      ggtitle("Ranks of primary response vs \n new surrogate in evaluation data") +
       guides(col = guide_legend(title = "Treatment")) +
       scale_color_manual(
         labels = levels(as.factor(treatment)),
@@ -235,11 +251,17 @@ rise.evaluate <- function(yone,
       coord_fixed(ratio = 1) +
       annotate(
         "text",
-        x = Inf, y = Inf,
-        label = bquote(rho == .(round(cor(as.numeric(rank.df$response.rank), as.numeric(rank.df$gamma.rank)), 2))),
-        vjust = 2, hjust = 3.3,
+        x = -Inf,           # top-left placement
+        y = Inf,
+        label = paste0(
+          "atop(delta[gamma[S]] == ", delta.label, 
+          ", rho == ", rho.val, ")"
+        ),
+        parse = TRUE,
+        hjust = -0.1,       # nudge inside the panel
+        vjust = 1.1,        # nudge inside the panel
         color = "red",
-        size = 15
+        size = 4
       ) +
       theme_minimal(base_size = 22) +
       theme(

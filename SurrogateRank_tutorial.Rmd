@@ -13,6 +13,10 @@ knitr::opts_chunk$set(fig.width=13, fig.height = 10, warning=FALSE, tidy=TRUE, t
 In this tutorial, we will go through examples using the functions in the *SurrogateRank* package. First, install the package from CRAN and load it.
 
 ```{r results = "hide", message=FALSE}
+#from Github
+#library(devtools)
+#install_github("laylaparast/SurrogateRank")
+#from CRAN
 #install.packages("SurrogateRank")
 library(SurrogateRank)
 

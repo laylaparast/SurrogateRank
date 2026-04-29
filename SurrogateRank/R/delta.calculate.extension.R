@@ -28,12 +28,12 @@
 #'
 #' @return A list with the following elements:
 #' \itemize{
-#'   \item{\code{u.y}: Rank-based test statistic for the primary outcome}
-#'   \item{\code{u.s}: Rank-based test statistic for the surrogate}
-#'   \item{\code{delta.estimate}: Estimated difference between outcome and surrogate statistics}
-#'   \item{\code{sd.u.y}: Standard deviation of the outcome statistic}
-#'   \item{\code{sd.u.s}: Standard deviation of the surrogate statistic}
-#'   \item{\code{sd.delta}: Standard error of the delta estimate}
+#'   \item \code{u.y}: Rank-based test statistic for the primary outcome
+#'   \item \code{u.s}: Rank-based test statistic for the surrogate
+#'   \item \code{delta.estimate}: Estimated difference between outcome and surrogate statistics
+#'   \item \code{sd.u.y}: Standard deviation of the outcome statistic
+#'   \item \code{sd.u.s}: Standard deviation of the surrogate statistic
+#'   \item \code{sd.delta}: Standard error of the delta estimate
 #' }
 #'
 #' @import dplyr
