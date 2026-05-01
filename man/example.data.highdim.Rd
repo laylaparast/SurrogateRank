@@ -3,7 +3,7 @@
 \docType{data}
 \name{example.data.highdim}
 \alias{example.data.highdim}
-\title{Example data for the high-dimensional functions}
+\title{High‑dimensional surrogate candidate example dataset}
 \format{
 A list containing :
 \describe{
@@ -11,23 +11,24 @@ A list containing :
 \item{y0}{primary response in untreated}
 \item{s1}{1000 surrogate candidates in treated}
 \item{s0}{1000 surrogate candidates in untreated}
-\item{hyp}{for each surrogate, \code{null false} if the surrogate is valid (note that this is from simulated data and is used to demonstrate the method; this would be unknown in practice)}
+\item{hyp}{for each surrogate, \code{null false} if the surrogate is valid}
 }
 }
 \source{
 Simulated for package examples.
 }
 \usage{
-data("example.data.highdim")
+data("example.data.highdim", package = "SurrogateRank")
 }
 \description{
 A simulated high‑dimensional dataset for demonstrating the RISE methodology
-implemented in this package. The data contains primary response and
+implemented in \pkg{SurrogateRank}. The data contains primary response and
 1000 surrogate candidates from 25 treated individuals and 25 untreated individuals,
 where 10\% of the surrogate candidates are "valid".
 }
 \examples{
-data("example.data.highdim")
+data("example.data.highdim", package = "SurrogateRank")
+head(example.data.highdim)
 
 }
 \keyword{datasets}

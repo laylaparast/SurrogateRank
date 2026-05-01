@@ -2,9 +2,16 @@
 % Please edit documentation in R/delta.calculate.extension.R
 \name{delta.calculate.extension}
 \alias{delta.calculate.extension}
-\title{Calculates the rank-based test statistic for Y and S and the difference, delta, accomodating paired data and allowing for a two-sided test}
+\title{Calculate Delta: Difference in Rank-based Statistics for Two Outcomes}
 \usage{
-delta.calculate.extension(yone, yzero, sone, szero, paired = FALSE)
+delta.calculate.extension(
+  yone,
+  yzero,
+  sone,
+  szero,
+  alpha = 0.05,
+  paired = FALSE
+)
 }
 \arguments{
 \item{yone}{numeric vector of primary response values in the treated group.}
@@ -20,6 +27,8 @@ and p the number of candidates. Sample ordering must match exactly
 with dimension \code{n0 x p} where n0 is the number of untreated
 samples and p the number of candidates. Sample ordering must match
 exactly \code{yzero}.}
+
+\item{alpha}{significance level of test, default is \code{0.05}}
 
 \item{paired}{logical flag giving if the data is independent or paired. If
 \code{FALSE} (default), samples are assumed independent. If
@@ -40,7 +49,8 @@ A list with the following elements:
 }
 \description{
 This function calculates the difference in treatment effects on a univariate marker
-and on a continuous primary response. This extends the \code{delta.calculate()} function to the case where samples may be paired instead of
+and on a continuous primary response. This extends the \code{delta.calculate()} function
+from the \code{SurrogateRank} package to the case where samples may be paired instead of
 independent, and where a two sided test is desired.
 }
 \details{

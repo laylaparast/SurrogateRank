@@ -20,6 +20,7 @@
 #'                           with dimension \code{n0 x p} where n0 is the number of untreated
 #'                           samples and p the number of candidates. Sample ordering must match
 #'                           exactly \code{yzero}.
+#' @param alpha              significance level of test, default is \code{0.05}
 #' @param paired             logical flag giving if the data is independent or paired. If
 #'                           \code{FALSE} (default), samples are assumed independent. If
 #'                           \code{TRUE}, samples are assumed to be from a paired design. The
@@ -55,6 +56,7 @@ delta.calculate.extension <- function(yone,
                                       yzero,
                                       sone,
                                       szero,
+                                      alpha = 0.05,
                                       paired = FALSE) {
   # Validity checks
   ## Check same number of samples in primary response and surrogates
@@ -81,8 +83,8 @@ delta.calculate.extension <- function(yone,
   # Independent case
   if (!paired) {
     # Use Wilcoxon rank-sum test for independent samples
-    test.y <- wilcox.test(yone, yzero, exact = FALSE)
-    test.s <- wilcox.test(sone, szero, exact = FALSE)
+    test.y <- wilcox.test(yone, yzero, exact = FALSE, conf.level = 1-alpha)
+    test.s <- wilcox.test(sone, szero, exact = FALSE, conf.level = 1-alpha)
 
     # Normalize test statistics to estimate U statistics
     n1.f <- length(yone)

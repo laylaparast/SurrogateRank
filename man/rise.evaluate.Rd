@@ -2,7 +2,7 @@
 % Please edit documentation in R/rise.evaluate.R
 \name{rise.evaluate}
 \alias{rise.evaluate}
-\title{Performs the evaluation stage of RISE: Two-Stage Rank-Based Identification of
+\title{Function to perform the evaluation stage of RISE : Two-Stage Rank-Based Identification of
 High-Dimensional Surrogate Markers}
 \usage{
 rise.evaluate(
@@ -16,7 +16,7 @@ rise.evaluate(
   u.y.hyp = NULL,
   p.correction = "BH",
   n.cores = 1,
-  alternative = "less",
+  alternative = "two.sided",
   paired = FALSE,
   return.all.evaluate = TRUE,
   return.plot.evaluate = TRUE,
@@ -64,7 +64,7 @@ function. Defaults to \code{1}.}
 \item{alternative}{character giving the alternative hypothesis type. One of
 \code{c("less","two.sided")}, where "less" corresponds to a
 non-inferiority test and "two.sided" corresponds to a two one-sided test
-procedure. Default is "less".}
+procedure. Default is "two.sided".}
 
 \item{paired}{logical flag giving if the data is independent or paired. If
 \code{FALSE} (default), samples are assumed independent. If \code{TRUE},
@@ -93,18 +93,17 @@ Must be given if \code{evaluate.weights} is \code{TRUE}.}
 If not given, will default to evaluating all markers in the dataframes.}
 }
 \value{
-A list with:
+a list with
 \itemize{
-  \item \code{individual.metrics} If \code{return.all.evaluate = TRUE}, a dataframe of
-  evaluation results for each significant marker.
-  \item \code{gamma.s} A list with elements \code{gamma.s.one} and \code{gamma.s.zero}, giving
-  the combined surrogate marker in the treated and untreated groups, respectively.
-  \item \code{gamma.s.evaluate} A dataframe giving the evaluation of \code{gamma.s}.
-  \item \code{gamma.s.plot} A ggplot2 plot showing \code{gamma.s} against the primary response
-  on the rank-scale.
+\item \code{individual.metrics} if \code{return.all.evaluate}=\code{TRUE}, a dataframe of
+evaluation results for each significant marker.
+\item \code{gamma.s} a list with elements \code{gamma.s.one} and \code{gamma.s.zero}, giving
+the combined surrogate marker in the treated and untreated groups, respectively.
+\item \code{gamma.s.evaluate} : a dataframe giving the evaluation of \code{gamma.s}
+\item \code{gamma.s.plot} : a ggplot2 plot showing \code{gamma.s} against the primary response
+on the rank-scale.
 }
 }
-
 \description{
 A set of high-dimensional surrogate candidates are evaluated jointly. Strength of surrogacy
 is assessed through a rank-based measure of the similarity in treatment effects on a candidate
@@ -112,13 +111,6 @@ surrogate and the primary response.
 }
 \examples{
 # Load high-dimensional example data
-data("example.data.highdim")
-yone <- example.data.highdim$y1
-yzero <- example.data.highdim$y0
-sone <- example.data.highdim$s1
-szero <- example.data.highdim$s0
-\donttest{
-rise.evaluate.result <- rise.evaluate(yone, yzero, sone, szero, power.want.s = 0.8)}
 }
 \author{
 Arthur Hughes

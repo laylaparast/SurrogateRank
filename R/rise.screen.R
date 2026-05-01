@@ -29,7 +29,7 @@
 #'   improve computational time through the \code{pbmcapply()} function. Defaults to \code{1}.
 #' @param alternative character giving the alternative hypothesis type. One of
 #'   \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
-#'   corresponds to a two one-sided test procedure. Default is "less".
+#'   corresponds to a two one-sided test procedure. Default is "two.sided".
 #' @param paired logical flag giving if the data is independent or paired. If \code{FALSE} (default),
 #'   samples are assumed independent. If \code{TRUE}, samples are assumed to be from a paired design.
 #'   The pairs are specified by matching the rows of \code{yone} and \code{sone} to the rows of
@@ -53,6 +53,8 @@
 #'
 #' @param normalise.weights logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 #'   all the weights such that the maximum weight is 1, which can help with interpretability.
+#'   
+#' @param verbose logical flag. If \code{TRUE}, prints warning messages. 
 #'   
 #'
 #' @return a list with elements \itemize{
@@ -85,12 +87,13 @@ rise.screen <- function(yone,
                         u.y.hyp = NULL,
                         p.correction = "BH",
                         n.cores = 1,
-                        alternative = "less",
+                        alternative = "two.sided",
                         paired = FALSE,
                         return.all.screen = TRUE,
                         return.all.weights = FALSE,
                         weight.mode = "inverse.delta",
-                        normalise.weights = T) {
+                        normalise.weights = TRUE,
+                        verbose = T) {
   # Data formatting
   ## Convert dataframes to numeric matrices
   if (is.data.frame(sone) | is.data.frame(szero)) {
@@ -147,7 +150,8 @@ rise.screen <- function(yone,
       alternative = alternative,
       paired = paired,
       power.want.s = power.want.s,
-      epsilon = epsilon
+      epsilon = epsilon,
+      alpha = alpha
     )
     
     res <- do.call(test.surrogate.extension, args)
@@ -216,6 +220,20 @@ rise.screen <- function(yone,
                   ci_upper,
                   p_unadjusted,
                   p_adjusted)
+  
+  # Add a message to warn users about degenerate standard error estimation
+  if(any(results$sd == 0)) {
+    n_zero <- sum(results$sd == 0)
+    if (verbose) {
+      warning(
+        sprintf(
+          "For %d markers, the estimated standard error is 0. This occurs when the candidate marker and the primary endpoint show complete pairwise concordance in the observed sample, leading to a degenerate variance estimate. While this may reflect strong agreement between the marker and the endpoint, the sampling variability cannot be estimated, and standard inference (confidence intervals and p-values) is therefore not reliable. This situation is more likely with small sample sizes or when no discordant pairs are observed. Interpret the results for these markers with caution.",
+          n_zero
+        )
+      )
+    }
+  }
+
   
   # Retreive names of significant markers
   significant_markers <- results %>%

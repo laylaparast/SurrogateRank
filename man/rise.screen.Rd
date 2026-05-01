@@ -2,7 +2,7 @@
 % Please edit documentation in R/rise.screen.R
 \name{rise.screen}
 \alias{rise.screen}
-\title{Perform the screening stage of RISE: Two-Stage Rank-Based Identification of
+\title{Function to perform the screening stage of RISE : Two-Stage Rank-Based Identification of
 High-Dimensional Surrogate Markers}
 \usage{
 rise.screen(
@@ -16,12 +16,13 @@ rise.screen(
   u.y.hyp = NULL,
   p.correction = "BH",
   n.cores = 1,
-  alternative = "less",
+  alternative = "two.sided",
   paired = FALSE,
   return.all.screen = TRUE,
   return.all.weights = FALSE,
   weight.mode = "inverse.delta",
-  normalise.weights = T
+  normalise.weights = TRUE,
+  verbose = T
 )
 }
 \arguments{
@@ -56,7 +57,7 @@ improve computational time through the \code{pbmcapply()} function. Defaults to 
 
 \item{alternative}{character giving the alternative hypothesis type. One of
 \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
-corresponds to a two one-sided test procedure. Default is "less".}
+corresponds to a two one-sided test procedure. Default is "two.sided".}
 
 \item{paired}{logical flag giving if the data is independent or paired. If \code{FALSE} (default),
 samples are assumed independent. If \code{TRUE}, samples are assumed to be from a paired design.
@@ -82,6 +83,8 @@ When \code{"none"}, the weights are set to 1 for every marker.}
 
 \item{normalise.weights}{logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 all the weights such that the maximum weight is 1, which can help with interpretability.}
+
+\item{verbose}{logical flag. If \code{TRUE}, prints warning messages.}
 }
 \value{
 a list with elements \itemize{
@@ -101,14 +104,6 @@ performed.
 }
 \examples{
 # Load high-dimensional example data
-data("example.data.highdim")
-yone <- example.data.highdim$y1
-yzero <- example.data.highdim$y0
-sone <- example.data.highdim$s1
-szero <- example.data.highdim$s0
-\donttest{
-rise.screen.result <- rise.screen(yone, yzero, sone, szero, power.want.s = 0.8)
-}
 }
 \author{
 Arthur Hughes

@@ -34,7 +34,7 @@
 #' @param alternative        character giving the alternative hypothesis type. One of
 #'                           \code{c("less","two.sided")}, where "less" corresponds to a
 #'                           non-inferiority test and "two.sided" corresponds to a two one-sided test
-#'                           procedure. Default is "less".
+#'                           procedure. Default is "two.sided".
 #' @param paired             logical flag giving if the data is independent or paired. If
 #'                           \code{FALSE} (default), samples are assumed independent. If \code{TRUE},
 #'                           samples are assumed to be from a paired design. The pairs are specified
@@ -61,7 +61,7 @@
 #' \itemize{
 #'   \item \code{individual.metrics} if \code{return.all.evaluate}=\code{TRUE}, a dataframe of
 #'         evaluation results for each significant marker.
-#'   \item \code{gamma.s} a list with elements \code{gamma.s.one} and  \code{gamma.s.zero}, giving
+#'   \item \code{gamma.s} a list with elements \code{gamma.s.one} and \code{gamma.s.zero}, giving
 #'         the combined surrogate marker in the treated and untreated groups, respectively.
 #'   \item \code{gamma.s.evaluate} : a dataframe giving the evaluation of \code{gamma.s}
 #'   \item \code{gamma.s.plot} : a ggplot2 plot showing \code{gamma.s} against the primary response
@@ -89,7 +89,7 @@ rise.evaluate <- function(yone,
                           u.y.hyp = NULL,
                           p.correction = "BH",
                           n.cores = 1,
-                          alternative = "less",
+                          alternative = "two.sided",
                           paired = FALSE,
                           return.all.evaluate = TRUE,
                           return.plot.evaluate = TRUE,

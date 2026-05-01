@@ -13,4 +13,3 @@ Description: Uses a novel rank-based nonparametric approach to evaluate a surrog
 License: GPL
 Encoding: UTF-8
 Imports: stats,dplyr,ggplot2,pbmcapply
-

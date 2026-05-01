@@ -15,7 +15,7 @@ test.surrogate.rise(
   u.y.hyp = NULL,
   p.correction = "BH",
   n.cores = 1,
-  alternative = "less",
+  alternative = "two.sided",
   paired = FALSE,
   screen.proportion = 0.66,
   return.all.screen = TRUE,
@@ -64,7 +64,7 @@ function. Defaults to \code{1}.}
 \item{alternative}{character giving the alternative hypothesis type. One of
 \code{c("less","two.sided")}, where "less" corresponds to a
 non-inferiority test and "two.sided" corresponds to a two one-sided test
-procedure. Default is "less".}
+procedure. Default is "two.sided".}
 
 \item{paired}{logical flag giving if the data is independent or paired. If
 \code{FALSE} (default), samples are assumed independent. If \code{TRUE},

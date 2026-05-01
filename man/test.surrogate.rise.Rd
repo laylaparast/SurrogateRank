@@ -2,7 +2,7 @@
 % Please edit documentation in R/test.surrogate.rise.R
 \name{test.surrogate.rise}
 \alias{test.surrogate.rise}
-\title{Performs RISE: Two-Stage Rank-Based Identification of High-Dimensional Surrogate Markers}
+\title{Function to perform RISE : Two-Stage Rank-Based Identification of High-Dimensional Surrogate Markers}
 \usage{
 test.surrogate.rise(
   yone,
@@ -15,7 +15,7 @@ test.surrogate.rise(
   u.y.hyp = NULL,
   p.correction = "BH",
   n.cores = 1,
-  alternative = "less",
+  alternative = "two.sided",
   paired = FALSE,
   screen.proportion = 0.66,
   return.all.screen = TRUE,
@@ -24,7 +24,7 @@ test.surrogate.rise(
   evaluate.weights = TRUE,
   return.all.weights = FALSE,
   weight.mode = "inverse.delta",
-  normalise.weights = T
+  normalise.weights = TRUE
 )
 }
 \arguments{
@@ -64,7 +64,7 @@ function. Defaults to \code{1}.}
 \item{alternative}{character giving the alternative hypothesis type. One of
 \code{c("less","two.sided")}, where "less" corresponds to a
 non-inferiority test and "two.sided" corresponds to a two one-sided test
-procedure. Default is "less".}
+procedure. Default is "two.sided".}
 
 \item{paired}{logical flag giving if the data is independent or paired. If
 \code{FALSE} (default), samples are assumed independent. If \code{TRUE},
@@ -97,8 +97,8 @@ weights for significant markers screened. If \code{TRUE}, weights for all marker
 that, if normalised weights are required, these will only be returned for significant markers, and raw
 weights will be returned in a second column.}
 
-\item{weight.mode}{character giving the type of weighting to return. One of \code{c("inverse.delta",}
-\code{"diff.epsilon", or "none")}. The default is \code{"inverse.delta"}, which means
+\item{weight.mode}{character giving the type of weighting to return. One of
+\code{c("inverse.delta","diff.epsilon", or "none")}. The default is \code{"inverse.delta"}, which means
 the weights are determined by taking the inverse of the absolute values of delta. If delta is exactly 0,
 this is uncomputable and the weight defaults to the inverse of the next closest absolute delta value. If
 delta is very close to 0, these estimates can be unstable and extreme. The \code{"diff.epsilon"} option
@@ -145,13 +145,6 @@ To avoid overfitting, the two stages are performed on separate data.
 }
 \examples{
 # Load high-dimensional example data
-data("example.data.highdim")
-yone <- example.data.highdim$y1
-yzero <- example.data.highdim$y0
-sone <- example.data.highdim$s1
-szero <- example.data.highdim$s0
-\donttest{
-rise.result <- test.surrogate.rise(yone, yzero, sone, szero, power.want.s = 0.8)}
 }
 \author{
 Arthur Hughes
