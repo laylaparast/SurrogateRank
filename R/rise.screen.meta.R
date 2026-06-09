@@ -710,6 +710,11 @@ rise.screen.meta = function(yone,
         legend.title       = element_text(size = 15),
         legend.text        = element_text(size = 13),
         plot.caption       = element_text(size = 13, hjust = 0)
+      ) + 
+      guides(
+        color = guide_colorbar(order = 1),
+        shape = guide_legend(order = 2),
+        linetype = guide_legend(order = 3)
       )
   }
   

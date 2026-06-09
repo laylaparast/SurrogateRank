@@ -236,11 +236,11 @@ rise.evaluate <- function(yone,
     delta.label <- cut_sig1(delta.val)
     
     gamma.s.plot <- rank.df %>%
-      ggplot(aes(x = response.rank, y = gamma.rank, col = as.factor(treatment))) +
+      ggplot(aes(y = response.rank, x = gamma.rank, col = as.factor(treatment))) +
       geom_point(size = 5) +
-      xlab("Primary Response (rank)") +
-      ylab(expression(gamma[S] ~ "(rank)")) +
-      ggtitle("Ranks of primary response vs \n new surrogate in evaluation data") +
+      ylab("Primary Endpoint (rank)") +
+      xlab("Composite surrogate (rank)") +
+      ggtitle("Ranks of primary endpoint vs \n composite surrogate in evaluation data") +
       guides(col = guide_legend(title = "Treatment")) +
       scale_color_manual(
         labels = levels(as.factor(treatment)),
@@ -254,14 +254,14 @@ rise.evaluate <- function(yone,
         x = -Inf,           # top-left placement
         y = Inf,
         label = paste0(
-          "atop(delta[gamma[S]] == ", delta.label, 
+          "atop(delta == ", delta.label, 
           ", rho == ", rho.val, ")"
         ),
         parse = TRUE,
         hjust = -0.1,       # nudge inside the panel
         vjust = 1.1,        # nudge inside the panel
         color = "red",
-        size = 4
+        size = 10
       ) +
       theme_minimal(base_size = 22) +
       theme(
