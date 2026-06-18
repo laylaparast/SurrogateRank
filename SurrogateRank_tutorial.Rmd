@@ -343,15 +343,13 @@ Finally, we can access various visualisations of these results through the *gamm
 Firstly, we can visualise the similarity between the significant markers identified within each study through the *similarity.plots* object. This has two sub-plots. The first is a classic venn diagram showing the similarity between the markers identified by each study. 
 
 ```{r}
-#in progress
-#rise.meta.screen.result[["gamma.s.plot"]]$similarity.plots$venn.plot
+rise.meta.screen.result[["gamma.s.plot"]]$similarity.plots$venn.plot
 ```
 
 The second is an upset plot, which is a modification of the venn diagram which is useful when the number of studies becomes large. 
 
 ```{r, fig.height = 7}
-#in progress
-#rise.meta.screen.result[["gamma.s.plot"]]$similarity.plots$upset.plot
+rise.meta.screen.result[["gamma.s.plot"]]$similarity.plots$upset.plot
 ```
 
 Here we see that the within-study analysis identify many common markers. 
@@ -359,8 +357,7 @@ Here we see that the within-study analysis identify many common markers.
 The main plot for the screening stage to visualise the results of the marker-level meta-analyses is the *screen.plot*
 
 ```{r, fig.height = 7}
-#in progress
-#rise.meta.screen.result[["gamma.s.plot"]][["screen.plot"]]
+rise.meta.screen.result[["gamma.s.plot"]][["screen.plot"]]
 ```
 
 By default, this shows the top 15 markers by p-value, although this can be changed in *rise.screen.meta()* through the *screen.plot.topN* argument. For these top markers, it gives the pooled effect estimate $\widehat{\mu}_{j}$ for each one. The colour of the points corresponds to the raw p-values from the equivalence testing. 
