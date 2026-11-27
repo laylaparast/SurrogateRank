@@ -38,6 +38,12 @@
 #' @param alternative character giving the alternative hypothesis type. One of
 #'   \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
+#' @param test.target character giving whether hypothesis testing (and hence the definition of a
+#'   "significant" marker) at the meta-analysis stage should be based on confidence intervals or
+#'   prediction intervals. One of \code{c("ci","pi")}. Default is \code{"ci"}.
+#'   Both intervals use the same level as the test: (1-2\code{alpha})*100% (e.g. 90% for \code{alpha = 0.05})
+#'   when \code{alternative = "two.sided"}, and one-sided (1-\code{alpha})*100% when \code{alternative = "less"}, so that a
+#'   raw p-value below \code{alpha} corresponds exactly to the interval lying within the equivalence margin.
 #' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to
 #' variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
 #'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing.
@@ -136,6 +142,7 @@ rise.screen.meta = function(yone,
                             p.correction = "BH",
                             n.cores = 1,
                             alternative = "two.sided",
+                            test.target = "ci",
                             test = "knha",
                             paired.all = FALSE,
                             paired.studies = NULL,
@@ -256,6 +263,11 @@ rise.screen.meta = function(yone,
         )
       )
     }
+  }
+  
+  ## Check that test.target is valid
+  if (!test.target %in% c("ci", "pi")) {
+    stop("test.target must be one of c(\"ci\", \"pi\")")
   }
   
   
@@ -506,10 +518,11 @@ rise.screen.meta = function(yone,
   # Now calculate combined weights using heterogeneity and surrogate strength
   delta.reml.df = delta.reml.df %>%
     mutate(
-      p.adjusted = p.adjust(p, method = p.correction),
+      p.target = if (test.target == "pi") p.pi else p,
+      p.adjusted = p.adjust(p.target, method = p.correction),
       weight.heterogeneity = 1 / weights.tau.sum,
       weight = weight.strength * weight.heterogeneity,
-      p.unadjusted = p,
+      p.unadjusted = p.target,
       pi.delta.lower = pi.lower,
       pi.delta.upper = pi.upper
     ) %>%
@@ -554,10 +567,19 @@ rise.screen.meta = function(yone,
         logp   = -log10(p.unadjusted),
         logp   = pmin(logp, -log10(p_floor)),
         sig    = p.adjusted < alpha,
-        # Clip the CI to the plotting range
-        ci.delta.lower = pmax(ci.delta.lower, -1),
-        ci.delta.upper = pmin(ci.delta.upper, 1),
+        # Error bars show the interval matching the test used for the raw p-values,
+        # clipped to the plotting range
+        bar.lower = pmax(if (test.target == "pi") pi.delta.lower else ci.delta.lower, -1),
+        bar.upper = pmin(if (test.target == "pi") pi.delta.upper else ci.delta.upper, 1)
       )
+
+    # Describe the error bars: (1-2*alpha) two-sided for TOST, (1-alpha) one-sided for non-inferiority
+    bar.level <- if (alternative == "two.sided") 100 * (1 - 2 * alpha) else 100 * (1 - alpha)
+    bar.subtitle <- paste0(
+      "Error bars: ", bar.level, "% ",
+      if (alternative == "two.sided") "" else "one-sided ",
+      if (test.target == "pi") "prediction" else "confidence", " intervals"
+    )
     
     # Legend breaks on the natural p-value scale
     p_breaks <- c(1, 0.1, 0.05, p_floor)
@@ -608,11 +630,11 @@ rise.screen.meta = function(yone,
         show.legend = FALSE
       ) +
       
-      # Horizontal CI segments
+      # Horizontal CI / PI segments
       geom_segment(
         aes(
-          x = ci.delta.lower,
-          xend = ci.delta.upper,
+          x = bar.lower,
+          xend = bar.upper,
           y = marker,
           yend = marker,
           color = logp
@@ -688,7 +710,8 @@ rise.screen.meta = function(yone,
       labs(
         x = expression("Pooled effect " ~ mu[delta]),
         y = NULL,
-        title = glue::glue("Meta-analysis screening results: Top {screen.plot.topN} markers")
+        title = glue::glue("Meta-analysis screening results: Top {screen.plot.topN} markers"),
+        subtitle = bar.subtitle
       ) +
       
       # Plot limits
@@ -702,6 +725,7 @@ rise.screen.meta = function(yone,
           face = "bold",
           hjust = 0.5
         ),
+        plot.subtitle      = element_text(size = 16, hjust = 0.5),
         axis.text.y        = element_text(size = 13),
         axis.text.x        = element_text(size = 15),
         axis.title.x       = element_text(size = 30),
@@ -910,6 +934,8 @@ rise.screen.meta = function(yone,
     meta.analysis.method = meta.analysis.method
   )[["results"]]
   
+  p.target.gamma <- if (test.target == "pi") delta.reml.gamma$p.pi else delta.reml.gamma$p
+  
   study.weights = data.frame(delta.reml.gamma$weights.tau.relative)
   
   # Initialise temporary dataframe for results
@@ -917,6 +943,11 @@ rise.screen.meta = function(yone,
     paste0("Pooled effect (", 100 * (1 - 2 * alpha), "% C.I.)")
   } else {
     paste0("Pooled effect (", 100 * (1 - alpha), "% C.I.)")
+  }
+  pi_label = if (alternative == "two.sided") {
+    paste0(100 * (1 - 2 * alpha), "% Prediction interval")
+  } else {
+    paste0(100 * (1 - alpha), "% one-sided prediction interval")
   }
   
   df.gamma.temp = data.frame(
@@ -930,7 +961,7 @@ rise.screen.meta = function(yone,
     "pi.delta.upper" = delta.reml.gamma$pi.upper,
     "u.y" = NA,
     "u.s" = NA,
-    "p" = delta.reml.gamma$p,
+    "p" = p.target.gamma,
     "study.weights" = NA
   )
   
@@ -954,8 +985,8 @@ rise.screen.meta = function(yone,
     "Q" = delta.reml.gamma$Q,
     "I2" = delta.reml.gamma$I2,
     "ccc" = ccc,
-    "p.unadjusted" = delta.reml.gamma$p,
-    "p.adjusted" = delta.reml.gamma$p,
+    "p.unadjusted" = p.target.gamma,
+    "p.adjusted" = p.target.gamma,
     "weight" = 1
   )
   
@@ -1105,9 +1136,14 @@ rise.screen.meta = function(yone,
       mutate(
         is.summary = (study == study_label),
         study.label = study,
-        label.pval = ifelse(is.na(p), "", formatC(
-          p, format = "f", digits = 3
-        )),
+        label.pval = ifelse(
+          is.na(p), "",
+          ifelse(
+            p < .Machine$double.eps,
+            paste0("< ", formatC(.Machine$double.eps, format = "e", digits = 2)),
+            formatC(p, format = "f", digits = 3)
+          )
+        ),
         label.n = ifelse(is.na(n), "", as.character(n))
       )
     
@@ -1125,8 +1161,8 @@ rise.screen.meta = function(yone,
     if (show.pooled.effect) {
       pi.row <- summary.row %>%
         mutate(
-          study = paste0(100 * (1 - alpha), "% Prediction interval"),
-          study.label = paste0(100 * (1 - alpha), "% Prediction interval"),
+          study = pi_label,
+          study.label = pi_label,
           ci.delta.lower = NA_real_,
           ci.delta.upper = NA_real_,
           p = NA_real_,
@@ -1137,6 +1173,11 @@ rise.screen.meta = function(yone,
           label.pval = "",
           label.n = ""
         )
+      # For PI-based testing the reported p-value refers to the prediction interval
+      if (test.target == "pi") {
+        pi.row$label.pval <- plot.df$label.pval[plot.df$is.summary][1]
+        plot.df$label.pval[plot.df$is.summary] <- ""
+      }
       plot.df <- bind_rows(plot.df, pi.row)
     }
     
@@ -1287,7 +1328,7 @@ rise.screen.meta = function(yone,
       geom_point(
         data = filter(
           plot.df,!is.summary &
-            study != paste0(100 * (1 - alpha), "% Prediction interval")
+            study != pi_label
         ),
         shape = 16,
         size = 3.5
@@ -1316,9 +1357,7 @@ rise.screen.meta = function(yone,
       ) +
       # prediction interval row (red horizontal line, no central point)
       geom_errorbar(
-        data = filter(plot.df, study == paste0(
-          100 * (1 - alpha), "% Prediction interval"
-        )),
+        data = filter(plot.df, study == pi_label),
         aes(xmin = pi.delta.lower, xmax = pi.delta.upper),
         width = 0.15,
         linewidth = 1.5,

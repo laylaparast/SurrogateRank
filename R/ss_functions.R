@@ -82,36 +82,3 @@ test.surrogate <- function(full.data = NULL, yone = NULL, yzero = NULL, sone = N
 
   return(list("u.y" = as.numeric(dd$u.y), "u.s" = as.numeric(dd$u.s), "delta.estimate" = as.numeric(dd$delta.estimate), "sd.u.y" = dd$sd.u.y, "sd.u.s" = dd$sd.u.s, "sd.delta" = as.numeric(dd$sd.delta), "ci.delta" = ci.delta, "epsilon.used" = epsilon, "is.surrogate" = is.surrogate))
 }
-
-est.power <- function(n.total, rho = 0.80, u.y.alt, delta.alt, power.want.s = 0.7, alpha = 0.05) {
-  delta.se.est <- sqrt(2 * (1 - rho) / (3 * n.total))
-  sd.null <- sqrt((n.total + 1) / (3 * n.total^2))
-  z.alpha.2 <- qnorm(1-(0.5*alpha))
-  u.s.power <- 1 / 2 - (qnorm(1 - power.want.s) - z.alpha.2) * (sd.null)
-  z.alpha <- qnorm(1-alpha)
-  est.power <- pnorm((1 / delta.se.est) * (u.y.alt - u.s.power - delta.alt) - z.alpha)
-  return(est.power)
-}
-
-# a is one number, b is vector
-var.wil <- function(a, b, flip = FALSE) {
-  if (!flip) {
-    return(mean(sapply(b, my.wilcox, x = a)))
-  }
-  if (flip) {
-    return(mean(sapply(b, my.wilcox, y = a)))
-  }
-}
-
-# in delong paper x = a, y = b
-my.wilcox <- function(x, y) {
-  if (x > y) {
-    return(1)
-  }
-  if (x == y) {
-    return(1 / 2)
-  }
-  if (x < y) {
-    return(0)
-  }
-}
