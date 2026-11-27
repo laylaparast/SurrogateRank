@@ -20,6 +20,7 @@ rise.screen.meta(
   p.correction = "BH",
   n.cores = 1,
   alternative = "two.sided",
+  test.target = "ci",
   test = "knha",
   paired.all = FALSE,
   paired.studies = NULL,
@@ -86,6 +87,13 @@ improve computational time through the \code{pbmcapply()} function. Defaults to 
 \item{alternative}{character giving the alternative hypothesis type. One of
 \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 corresponds to a two one-sided test procedure. Default is "two.sided".}
+
+\item{test.target}{character giving whether hypothesis testing (and hence the definition of a
+"significant" marker) at the meta-analysis stage should be based on confidence intervals or
+prediction intervals. One of \code{c("ci","pi")}. Default is \code{"ci"}.
+Both intervals use the same level as the test: (1-2\code{alpha})*100\% (e.g. 90\% for \code{alpha = 0.05})
+when \code{alternative = "two.sided"}, and one-sided (1-\code{alpha})*100\% when \code{alternative = "less"}, so that a
+raw p-value below \code{alpha} corresponds exactly to the interval lying within the equivalence margin.}
 
 \item{test}{character giving the type of test to be performed. The default is \code{knha}, corresponding to
 variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,

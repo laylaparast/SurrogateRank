@@ -235,39 +235,71 @@ rise.evaluate <- function(yone,
     
     delta.label <- cut_sig1(delta.val)
     
+    # Format the p-value in scientific notation for plotmath (e.g. "2.34 %*% 10^{-5}")
+    p_val <- gamma.s.result$p.delta
+    
+    # Helper: turn a numeric p-value into a "m %*% 10^{e}" plotmath fragment
+    format_sci_plotmath <- function(x) {
+      parts <- strsplit(formatC(x, format = "e", digits = 2), "e", fixed = TRUE)[[1]]
+      mantissa <- parts[1]
+      exponent <- as.integer(parts[2])
+      paste0(mantissa, " %*% 10^{", exponent, "}")
+    }
+    
+    if (p_val == 0) {
+      # Exactly zero (underflowed below R's floating point precision)
+      p_operator <- "<"
+      p_val_label <- format_sci_plotmath(.Machine$double.eps)
+    } else {
+      # Nonzero: always show in scientific notation, never rounds to 0
+      p_operator <- "=="
+      p_val_label <- format_sci_plotmath(p_val)
+    }
+    
     gamma.s.plot <- rank.df %>%
-      ggplot(aes(x = response.rank, y = gamma.rank, col = as.factor(treatment))) +
-      geom_point(size = 5) +
-      xlab("Primary Response (rank)") +
-      ylab(expression(gamma[S] ~ "(rank)")) +
-      ggtitle("Ranks of primary response vs \n new surrogate in evaluation data") +
-      guides(col = guide_legend(title = "Treatment")) +
+      ggplot(aes(y = response.rank, x = gamma.rank, col = as.factor(treatment))) +
+      geom_point(size = 4.5, alpha = 0.55, stroke = 0) +
+      geom_abline(slope = 1, col = "grey40", linetype = "dashed", linewidth = 1) +
+      ylab("Primary Endpoint (rank)") +
+      xlab("Composite surrogate (rank)") +
+      ggtitle("Ranks of primary endpoint vs \n composite surrogate in evaluation data") +
+      guides(col = guide_legend(title = "Treatment",
+                                override.aes = list(size = 5, alpha = 1))) +
       scale_color_manual(
         labels = levels(as.factor(treatment)),
-        values = c("#1D8A99", "#c1121f")
+        values = c("#0B7189", "#D1495B")
       ) +
-      theme_minimal() +
-      geom_abline(slope = 1, col = "red", linetype = "dashed", linewidth = 1.4) +
       coord_fixed(ratio = 1) +
       annotate(
         "text",
         x = -Inf,           # top-left placement
         y = Inf,
         label = paste0(
-          "atop(delta[gamma[S]] == ", delta.label, 
-          ", rho == ", rho.val, ")"
+          "atop(delta == ", delta.label,
+          ", italic(p) ", p_operator, " ", p_val_label, ")"
         ),
         parse = TRUE,
         hjust = -0.1,       # nudge inside the panel
-        vjust = 1.1,        # nudge inside the panel
-        color = "red",
-        size = 4
+        vjust = 1.2,        # nudge inside the panel
+        color = "grey20",
+        size = 8
       ) +
       theme_minimal(base_size = 22) +
       theme(
-        plot.title = element_text(hjust = 0.5, face = "bold"),
-        plot.background = element_rect(fill = "white", color = "white")
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 20,
+                                  margin = margin(b = 10)),
+        plot.background = element_rect(fill = "white", color = "white"),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_line(colour = "grey92", linewidth = 0.4),
+        axis.title = element_text(size = 18),
+        axis.text = element_text(size = 14, colour = "grey30"),
+        legend.position = "right",
+        legend.title = element_text(face = "bold", size = 16),
+        legend.text = element_text(size = 14),
+        legend.key = element_blank()
       )
+    
+    gamma.s.plot
   }
 
   # Now individually evaluate the candidate surrogates with the screen function

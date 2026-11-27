@@ -27,14 +27,27 @@
 #'          whereas the two-one-sided test (i.e. \code{alternative = "two.sided"})
 #'          corresponds to a (1-2\code{alpha})*100% interval.
 #'   \item \code{ci.delta.lower} : numeric, lower confidence interval for mean of delta
-#'   \item \code{p.lower} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
+#'   \item \code{p.lower.ci} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
 #'   testing the null hypothesis that \code{delta} is less than \code{-epsilon}.
 #'   Value is \code{NULL} if \code{alternative} is \code{"less"}.
-#'   \item \code{p.upper} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
+#'   \item \code{p.upper.ci} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
 #'   testing the null hypothesis that \code{delta} is less than \code{epsilon}.
 #'   Value is \code{NULL} if \code{alternative} is \code{"less"}.
 #'   \item \code{p} : numeric, consensus p-value for hypothesis test for either the two-one-sided test or
 #'   the non-inferiorty test.
+#'   \item \code{pi.lower}, \code{pi.upper} : numeric, prediction interval for the \code{delta} of a new study.
+#'          It uses the same critical value as the confidence interval, so it is a (1-2\code{alpha})*100% interval
+#'          (e.g. 90% for \code{alpha = 0.05}) when \code{alternative = "two.sided"} and a one-sided
+#'          (1-\code{alpha})*100% interval with \code{pi.lower = -1} when \code{alternative = "less"}. Hence
+#'          \code{p.pi < alpha} if and only if the prediction interval lies within the equivalence margin.
+#'   \item \code{p.lower.pi} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
+#'   testing the null hypothesis that the predictive distribution for a new study's \code{delta} is less than \code{-epsilon}.
+#'   Value is \code{NULL} if \code{alternative} is \code{"less"}.
+#'   \item \code{p.upper.pi} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
+#'   testing the null hypothesis that the predictive distribution for a new study's \code{delta} is greater than \code{epsilon}.
+#'   Value is \code{NULL} if \code{alternative} is \code{"less"}.
+#'   \item \code{p.pi} : numeric, consensus p-value for the two-one-sided test (or non-inferiority test) applied to the
+#'   predictive distribution rather than the pooled mean.
 #'   \item \code{Q} : numeric, Cochran's Q-statistic for heterogeneity between studies
 #'   \item \code{I2} : numeric, Higgins-Thompson I-squared statistic representing the total percentage of variation
 #'   attributable to between-study heterogeneity
@@ -78,6 +91,26 @@ delta.reml.meta <- function(delta = NULL,
   
   # Reset the value of n.studies
   n.studies = length(delta)
+
+  # At least two studies with non-degenerate standard errors are needed to pool
+  if (n.studies < 2) {
+    warning(sprintf(
+      "Only %d study(ies) with a non-zero standard error; meta-analysis not performed and NA returned.",
+      n.studies
+    ))
+    two.sided <- alternative == "two.sided"
+    return(list(results = list(
+      n.studies = n.studies, tau2 = NA_real_, mu.delta = NA_real_, se.delta = NA_real_,
+      ci.delta.upper = NA_real_, ci.delta.lower = NA_real_,
+      p.lower.ci = if (two.sided) NA_real_ else NULL,
+      p.upper.ci = if (two.sided) NA_real_ else NULL,
+      pi.lower = NA_real_, pi.upper = NA_real_,
+      p.lower.pi = if (two.sided) NA_real_ else NULL,
+      p.upper.pi = if (two.sided) NA_real_ else NULL,
+      p.pi = NA_real_, p = NA_real_, Q = NA_real_, I2 = NA_real_,
+      weights.tau = NA_real_, weights.tau.relative = NA_real_, weights.tau.sum = NA_real_
+    )))
+  }
   
   vi <- sd.delta^2
   
@@ -195,14 +228,14 @@ delta.reml.meta <- function(delta = NULL,
     if (alternative == "two.sided") {
       T.L <- (mu.delta.hat + epsilon) / se.final
       T.U <- (mu.delta.hat - epsilon) / se.final
-      p.lower <- 1 - pnorm(T.L)
-      p.upper <- pnorm(T.U)
-      p.final <- max(p.lower, p.upper)
+      p.lower.ci <- 1 - pnorm(T.L)
+      p.upper.ci <- pnorm(T.U)
+      p.final <- max(p.lower.ci, p.upper.ci)
     } else {
       T.U <- (mu.delta.hat - epsilon) / se.final
       p.final <- pnorm(T.U)
-      p.lower <- NULL
-      p.upper <- NULL
+      p.lower.ci <- NULL
+      p.upper.ci <- NULL
     }
   } else if (meta.analysis.method == "RE" & test == "z") {
     se.final <- se.conv
@@ -216,14 +249,14 @@ delta.reml.meta <- function(delta = NULL,
     if (alternative == "two.sided") {
       T.L <- (mu.delta.hat + epsilon) / se.final
       T.U <- (mu.delta.hat - epsilon) / se.final
-      p.lower <- 1 - pnorm(T.L)
-      p.upper <- pnorm(T.U)
-      p.final <- max(p.lower, p.upper)
+      p.lower.ci <- 1 - pnorm(T.L)
+      p.upper.ci <- pnorm(T.U)
+      p.final <- max(p.lower.ci, p.upper.ci)
     } else {
       T.U <- (mu.delta.hat - epsilon) / se.final
       p.final <- pnorm(T.U)
-      p.lower <- NULL
-      p.upper <- NULL
+      p.lower.ci <- NULL
+      p.upper.ci <- NULL
     }
   } else if (meta.analysis.method == "RE" & test == "knha"){
     # Default: Hartung-Knapp, t-distribution
@@ -241,14 +274,14 @@ delta.reml.meta <- function(delta = NULL,
     if (alternative == "two.sided") {
       T.L <- (mu.delta.hat + epsilon) / se.final
       T.U <- (mu.delta.hat - epsilon) / se.final
-      p.lower <- 1 - pt(T.L, df = n.studies - 1)
-      p.upper <- pt(T.U, df = n.studies - 1)
-      p.final <- max(p.lower, p.upper)
+      p.lower.ci <- 1 - pt(T.L, df = n.studies - 1)
+      p.upper.ci <- pt(T.U, df = n.studies - 1)
+      p.final <- max(p.lower.ci, p.upper.ci)
     } else {
       T.U <- (mu.delta.hat - epsilon) / se.final
       p.final <- pt(T.U, df = n.studies - 1)
-      p.lower <- NULL
-      p.upper <- NULL
+      p.lower.ci <- NULL
+      p.upper.ci <- NULL
     }
   }
   
@@ -276,17 +309,36 @@ delta.reml.meta <- function(delta = NULL,
   var_pred <- (se.final^2) + tau2.hat
   se.pred <- sqrt(var_pred)
   
+  # The prediction interval is built with the same critical value as the confidence interval
+  # (one-sided level alpha), so that the TOST / non-inferiority test on the predictive
+  # distribution rejects at level alpha exactly when the interval lies inside the margin:
+  #   two.sided : (1 - 2*alpha)*100% two-sided interval, e.g. 90% for alpha = 0.05
+  #   less      : (1 - alpha)*100% one-sided interval (-1, upper], e.g. 95% for alpha = 0.05
   if (test == "z" || meta.analysis.method == "FE") {
-    zcrit_pi <- qnorm(1 - alpha / 2)
-    pi.lower <- mu.delta.hat - zcrit_pi * se.pred
-    pi.upper <- mu.delta.hat + zcrit_pi * se.pred
+    crit_pi <- qnorm(1 - alpha)
+    p.fn <- function(q, lower.tail = TRUE) pnorm(q, lower.tail = lower.tail)
   } else {
     df_pi <- n.studies - 1
-    tcrit_pi <- qt(1 - alpha / 2, df = df_pi)
-    pi.lower <- mu.delta.hat - tcrit_pi * se.pred
-    pi.upper <- mu.delta.hat + tcrit_pi * se.pred
+    crit_pi <- qt(1 - alpha, df = df_pi)
+    p.fn <- function(q, lower.tail = TRUE) pt(q, df = df_pi, lower.tail = lower.tail)
   }
-  
+
+  pi.upper <- mu.delta.hat + crit_pi * se.pred
+  pi.lower <- if (alternative == "two.sided") mu.delta.hat - crit_pi * se.pred else -1
+
+  # TOST / non-inferiority test on the predictive distribution
+  T.U.pi <- (mu.delta.hat - epsilon) / se.pred
+  if (alternative == "two.sided") {
+    T.L.pi <- (mu.delta.hat + epsilon) / se.pred
+    p.lower.pi <- p.fn(T.L.pi, lower.tail = FALSE)
+    p.upper.pi <- p.fn(T.U.pi)
+    p.pi <- max(p.lower.pi, p.upper.pi)
+  } else {
+    p.pi <- p.fn(T.U.pi)
+    p.lower.pi <- NULL
+    p.upper.pi <- NULL
+  }
+
   # -------------------------
   # prepare output
   # -------------------------
@@ -297,10 +349,13 @@ delta.reml.meta <- function(delta = NULL,
     se.delta = se.final,
     ci.delta.upper = ci.final[2],
     ci.delta.lower = ci.final[1],
+    p.lower.ci = p.lower.ci,
+    p.upper.ci = p.upper.ci,
     pi.lower = pi.lower,
     pi.upper = pi.upper,
-    p.lower = p.lower,
-    p.upper = p.upper,
+    p.lower.pi = p.lower.pi,
+    p.upper.pi = p.upper.pi,  
+    p.pi = p.pi,  
     p = p.final,
     Q = Q,
     I2 = I2,

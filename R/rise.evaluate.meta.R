@@ -33,6 +33,13 @@
 #' @param alternative character giving the alternative hypothesis type. One of
 #'   \code{c("less","two.sided")}, where "less" corresponds to a non-inferiority test and "two.sided"
 #'   corresponds to a two one-sided test procedure. Default is "two.sided".
+#' @param test.target character giving whether hypothesis testing at the meta-analysis stage
+#'   should be based on confidence intervals or prediction intervals. One of \code{c("ci","pi")}.
+#'   Default is \code{"ci"}. Also passed through to \code{rise.screen.meta()} when
+#'   \code{return.all.evaluate = TRUE}.
+#'   Both intervals use the same level as the test: (1-2\code{alpha})*100% (e.g. 90% for \code{alpha = 0.05})
+#'   when \code{alternative = "two.sided"}, and one-sided (1-\code{alpha})*100% when \code{alternative = "less"}, so that a
+#'   raw p-value below \code{alpha} corresponds exactly to the interval lying within the equivalence margin.
 #' @param test character giving the type of test to be performed. The default is \code{knha}, corresponding to
 #' variance estimation using the more conservative Hartung-Knapp estimator and performes tests with the t-distribution,
 #'  whereas setting this argument to \code{z} estimates the variance with the conventional estimator and uses a normal approximation for testing.
@@ -122,6 +129,7 @@ rise.evaluate.meta = function(yone,
                               p.correction = "BH",
                               n.cores = 1,
                               alternative = "two.sided",
+                              test.target = "ci",
                               test = "knha",
                               paired.all = FALSE,
                               paired.studies = NULL,
@@ -270,6 +278,11 @@ rise.evaluate.meta = function(yone,
         )
       )
     }
+  }
+  
+  ## Check that test.target is valid
+  if (!test.target %in% c("ci", "pi")) {
+    stop("test.target must be one of c(\"ci\", \"pi\")")
   }
   
   # Form gamma as the weighted standardised sum of the markers within each study
@@ -575,6 +588,9 @@ rise.evaluate.meta = function(yone,
     mutate("marker" = "gamma") %>%
     relocate(marker, .before = n.studies)
   
+  evaluation.metrics.meta = evaluation.metrics.meta %>%
+    mutate(p.target = if (test.target == "pi") p.pi else p)
+  
   # Plots
   
   # If fit plot desired, return it
@@ -689,6 +705,11 @@ rise.evaluate.meta = function(yone,
     } else {
       paste0("Pooled effect (", 100 * (1 - alpha), "% C.I.)")
     }
+    pi_label = if (alternative == "two.sided") {
+      paste0(100 * (1 - 2 * alpha), "% Prediction interval")
+    } else {
+      paste0(100 * (1 - alpha), "% one-sided prediction interval")
+    }
     
     df.gamma.temp = evaluation.metrics.meta %>%
       mutate(
@@ -706,7 +727,7 @@ rise.evaluate.meta = function(yone,
         marker = "gamma",
         n = length(yone) + length(yzero),
         sd = se.delta,
-        p.unadjusted = p,
+        p.unadjusted = p.target,
         p.adjusted = NA
       ) %>%
       select(all_of(colnames(evaluation.metrics.study.temp)), pi.lower, pi.upper) %>%
@@ -744,9 +765,12 @@ rise.evaluate.meta = function(yone,
         is.summary = (study == study_label),
         study.label = study,
         label.pval = ifelse(
-          is.na(p.unadjusted),
-          "",
-          formatC(p.unadjusted, format = "f", digits = 3)
+          is.na(p.unadjusted), "",
+          ifelse(
+            p.unadjusted < .Machine$double.eps,
+            paste0("< ", formatC(.Machine$double.eps, format = "e", digits = 2)),
+            formatC(p.unadjusted, format = "f", digits = 3)
+          )
         ),
         label.n = ifelse(is.na(n), "", as.character(n)),
         ci_width = ci.upper - ci.lower,
@@ -775,8 +799,8 @@ rise.evaluate.meta = function(yone,
     if (show.pooled.effect) {
       pi.row <- summary.row %>%
         mutate(
-          study = paste0(100 * (1 - alpha), "% Prediction interval"),
-          study.label = paste0(100 * (1 - alpha), "% Prediction interval"),
+          study = pi_label,
+          study.label = pi_label,
           ci.lower = NA_real_,
           ci.upper = NA_real_,
           # keep pi.lower / pi.upper as they come from summary.row (do not overwrite)
@@ -791,6 +815,11 @@ rise.evaluate.meta = function(yone,
           pi.lower = ifelse(is.na(pi.lower), NA_real_, pmax(pmin(pi.lower, 1), -1)),
           pi.upper = ifelse(is.na(pi.upper), NA_real_, pmax(pmin(pi.upper, 1), -1))
         )
+      # For PI-based testing the reported p-value refers to the prediction interval
+      if (test.target == "pi") {
+        pi.row$label.pval <- plot.df$label.pval[plot.df$is.summary][1]
+        plot.df$label.pval[plot.df$is.summary] <- ""
+      }
       plot.df <- bind_rows(plot.df, pi.row)
     }
     
@@ -915,7 +944,7 @@ rise.evaluate.meta = function(yone,
         data = filter(
           plot.df,
           !is.summary &
-            study != paste0(100 * (1 - alpha), "% Prediction interval")
+            study != pi_label
         ),
         shape = 16,
         size = 3.5
@@ -941,7 +970,7 @@ rise.evaluate.meta = function(yone,
         linewidth = 0.8
       ) +
       geom_errorbar(
-        data = filter(plot.df, study == paste0(100 * (1 - alpha), "% Prediction interval")),
+        data = filter(plot.df, study == pi_label),
         aes(xmin = pi.lower, xmax = pi.upper),
         width = 0.15,
         linewidth = 1.5,
@@ -1128,28 +1157,31 @@ rise.evaluate.meta = function(yone,
   
   if (return.all.evaluate) {
     rise.screen.results = rise.screen.meta(
-      yone,
-      yzero,
-      sone,
-      szero,
-      studyone,
-      studyzero,
-      alpha,
-      epsilon.study,
+      yone = yone,
+      yzero = yzero,
+      sone = sone,
+      szero = szero,
+      studyone = studyone,
+      studyzero = studyzero,
+      alpha = alpha,
+      power.want.s.study = power.want.s.study,
+      epsilon.study = epsilon.study,
+      epsilon.meta.mode = epsilon.meta.mode,
       epsilon.meta = epsilon.meta,
-      power.want.s.study,
-      u.y.hyp,
-      p.correction,
-      n.cores,
-      alternative,
-      paired.all,
-      paired.studies,
-      return.all.screen = T,
-      return.all.weights = T,
-      weight.mode,
-      normalise.weights = T,
-      return.forest.plot = F,
-      return.fit.plot = F
+      u.y.hyp = u.y.hyp,
+      p.correction = p.correction,
+      n.cores = n.cores,
+      alternative = alternative,
+      test.target = test.target,
+      test = test,
+      paired.all = paired.all,
+      paired.studies = paired.studies,
+      return.all.screen = TRUE,
+      return.all.weights = TRUE,
+      weight.mode = weight.mode,
+      normalise.weights = TRUE,
+      return.forest.plot = FALSE,
+      return.fit.plot = FALSE
     )
     
     individual.metrics = list(

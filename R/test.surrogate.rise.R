@@ -79,6 +79,12 @@
 #'
 #' @param normalise.weights logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 #'   all the weights such that the maximum weight is 1, which can help with interpretability.
+#' @param return.screen.plot logical flag. If \code{TRUE} (default), returns a plot of the top predictors, sorted by p-value,
+#'   from the screening stage. The number of predictors to display is given by the \code{screen.plot.topN} argument, which has default
+#'   value 15.
+#' @param screen.plot.topN number of predictors to display in the screening results figure, default value is 15.
+#' @param screen.plot.point.estimate logical flag. If \code{FALSE} (default), uses the \code{screen.plot.topN} argument to determine how many
+#' markers to display on the screen plot. Otherwise, plots all the markers with a point estimate within the equivalence region.   
 #'
 #' @return a list with \itemize{
 #'   \item \code{screening.results}: a list with \itemize{
@@ -129,7 +135,10 @@ test.surrogate.rise <- function(yone,
                                 evaluate.weights = TRUE,
                                 return.all.weights = FALSE,
                                 weight.mode = "inverse.delta",
-                                normalise.weights = TRUE) {
+                                normalise.weights = TRUE,
+                                return.screen.plot = TRUE,
+                                screen.plot.topN = 15,
+                                screen.plot.point.estimate = FALSE) {
   # Data formatting
   ## Convert dataframes to numeric matrices
   if (is.data.frame(sone) | is.data.frame(szero)) {
@@ -239,7 +248,10 @@ test.surrogate.rise <- function(yone,
     return.all.screen,
     return.all.weights,
     weight.mode,
-    normalise.weights
+    normalise.weights,
+    return.screen.plot,
+    screen.plot.topN,
+    screen.plot.point.estimate
   )
   
   if (length(screening.results[["significant.markers"]]) == 0){

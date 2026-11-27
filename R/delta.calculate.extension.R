@@ -135,17 +135,17 @@ delta.calculate.extension <- function(yone,
     # For paired samples, use within-pair comparisons
     n <- length(yone)
 
-    # Proportion of pairs where yone > yzero
-    u.y <- mean(ifelse(yone > yzero, 1, 0))
-    u.s <- mean(ifelse(sone > szero, 1, 0))
+    # Proportion of pairs where yone > yzero (ties count 1/2)
+    u.y <- mean((yone > yzero) + 0.5 * (yone == yzero))
+    u.s <- mean((sone > szero) + 0.5 * (sone == szero))
     delta.estimate <- u.y - u.s
 
     # Estimate variances
-    sd.y <- sd(ifelse(yone > yzero, 1, 0))
-    sd.s <- sd(ifelse(sone > szero, 1, 0))
+    sd.y <- sd((yone > yzero) + 0.5 * (yone == yzero))
+    sd.s <- sd((sone > szero) + 0.5 * (sone == szero))
 
     # Difference in indicators for each pair
-    di <- ifelse(yone > yzero, 1, 0) - ifelse(sone > szero, 1, 0)
+    di <- ((yone > yzero) + 0.5 * (yone == yzero)) - ((sone > szero) + 0.5 * (sone == szero))
     var_delta <- var(di) / n
     sd.est <- sqrt(var_delta)
   }

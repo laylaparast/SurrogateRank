@@ -53,14 +53,27 @@ these bounds correspond to a (1-\code{alpha})*100\% confidence interval,
 whereas the two-one-sided test (i.e. \code{alternative = "two.sided"})
 corresponds to a (1-2\code{alpha})*100\% interval.
 \item \code{ci.delta.lower} : numeric, lower confidence interval for mean of delta
-\item \code{p.lower} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
+\item \code{p.lower.ci} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
 testing the null hypothesis that \code{delta} is less than \code{-epsilon}.
 Value is \code{NULL} if \code{alternative} is \code{"less"}.
-\item \code{p.upper} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
+\item \code{p.upper.ci} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
 testing the null hypothesis that \code{delta} is less than \code{epsilon}.
 Value is \code{NULL} if \code{alternative} is \code{"less"}.
 \item \code{p} : numeric, consensus p-value for hypothesis test for either the two-one-sided test or
 the non-inferiorty test.
+\item \code{pi.lower}, \code{pi.upper} : numeric, prediction interval for the \code{delta} of a new study.
+It uses the same critical value as the confidence interval, so it is a (1-2\code{alpha})*100\% interval
+(e.g. 90\% for \code{alpha = 0.05}) when \code{alternative = "two.sided"} and a one-sided
+(1-\code{alpha})*100\% interval with \code{pi.lower = -1} when \code{alternative = "less"}. Hence
+\code{p.pi < alpha} if and only if the prediction interval lies within the equivalence margin.
+\item \code{p.lower.pi} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
+testing the null hypothesis that the predictive distribution for a new study's \code{delta} is less than \code{-epsilon}.
+Value is \code{NULL} if \code{alternative} is \code{"less"}.
+\item \code{p.upper.pi} : numeric, if \code{alternative} is \code{"two.sided"}, gives the p-value corresponding to
+testing the null hypothesis that the predictive distribution for a new study's \code{delta} is greater than \code{epsilon}.
+Value is \code{NULL} if \code{alternative} is \code{"less"}.
+\item \code{p.pi} : numeric, consensus p-value for the two-one-sided test (or non-inferiority test) applied to the
+predictive distribution rather than the pooled mean.
 \item \code{Q} : numeric, Cochran's Q-statistic for heterogeneity between studies
 \item \code{I2} : numeric, Higgins-Thompson I-squared statistic representing the total percentage of variation
 attributable to between-study heterogeneity

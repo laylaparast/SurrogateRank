@@ -36,12 +36,10 @@
 #'   \code{yzero} and \code{szero}.
 #' @param return.all.screen logical flag. If \code{TRUE} (default), a dataframe will be returned giving
 #'   the screening results for all candidates. Else, only the significant candidates will be returned.
-#'
 #' @param return.all.weights logical flag. If \code{FALSE} (default), a dataframe will be returned giving
 #'   weights for significant markers screened. If \code{TRUE}, weights for all markers will be returned. Note
 #'   that, if normalised weights are required, these will only be returned for significant markers, and raw
 #'   weights will be returned in a second column.
-#'
 #' @param weight.mode character giving the type of weighting to return. One of
 #'   \code{c("inverse.delta","diff.epsilon", or "none")}. The default is \code{"inverse.delta"}, which means
 #'   the weights are determined by taking the inverse of the absolute values of delta. If delta is exactly 0,
@@ -50,10 +48,14 @@
 #'   seeks to aid this by calculating weights as the proportion of the interval between 0 and epsilon cut by
 #'   the absolute value of delta, therefore giving delta = 0 a weight of 1 and delta = epsilon a weight of 0.
 #'   When \code{"none"}, the weights are set to 1 for every marker.
-#'
 #' @param normalise.weights logical flag. If \code{TRUE} (default), the weights are normalised by the sum of
 #'   all the weights such that the maximum weight is 1, which can help with interpretability.
-#'   
+#' @param return.screen.plot logical flag. If \code{TRUE} (default), returns a plot of the top predictors, sorted by p-value,
+#'   from the screening stage. The number of predictors to display is given by the \code{screen.plot.topN} argument, which has default
+#'   value 15.
+#' @param screen.plot.topN number of predictors to display in the screening results figure, default value is 15.
+#' @param screen.plot.point.estimate logical flag. If \code{FALSE} (default), uses the \code{screen.plot.topN} argument to determine how many
+#' markers to display on the screen plot. Otherwise, plots all the markers with a point estimate within the equivalence region.   
 #' @param verbose logical flag. If \code{TRUE}, prints warning messages. 
 #'   
 #'
@@ -65,7 +67,7 @@
 #'     associated deltas.
 #' }
 #'
-#' @import dplyr pbmcapply
+#' @import dplyr pbmcapply ggplot2
 #' @export
 #' @author Arthur Hughes
 #'
@@ -93,6 +95,9 @@ rise.screen <- function(yone,
                         return.all.weights = FALSE,
                         weight.mode = "inverse.delta",
                         normalise.weights = TRUE,
+                        return.screen.plot = TRUE,
+                        screen.plot.topN = 15,
+                        screen.plot.point.estimate = FALSE,
                         verbose = T) {
   # Data formatting
   ## Convert dataframes to numeric matrices
@@ -221,6 +226,189 @@ rise.screen <- function(yone,
                   p_unadjusted,
                   p_adjusted)
   
+  
+  # Output screen plot if desired
+  
+  if (return.screen.plot) {
+    epsilon.val = unique(results$epsilon)
+    p_floor <- 1e-2   # practical lower bound for the colour scale
+    if (screen.plot.point.estimate) {
+      screen.plot.topN = results  %>%
+        filter(abs(delta) <= epsilon.val) %>%
+        nrow()
+    }
+    
+    df_plot <- results  %>%
+      arrange(p_unadjusted) %>%
+      slice_head(n = screen.plot.topN) %>%
+      mutate(
+        marker = factor(marker, levels = rev(unique(marker))),
+        logp   = -log10(p_unadjusted),
+        logp   = pmin(logp, -log10(p_floor)),
+        sig    = p_adjusted < alpha,
+        # Clip the CI to the plotting range
+        ci_lower = pmax(ci_lower, -1),
+        ci_upper = pmin(ci_upper, 1),
+      )
+    
+    # Legend breaks on the natural p-value scale
+    p_breaks <- c(1, 0.1, 0.05, p_floor)
+    logp_breaks <- -log10(p_breaks)
+    
+    # Colour positions corresponding to the log scale
+    colour_values <- scales::rescale(c(0, -log10(0.05), -log10(0.01), -log10(p_floor)), from = c(0, -log10(p_floor)))
+    
+    epsilon.val.rounded = round(epsilon.val, 3)
+    # Light shading for equivalence region
+    if (alternative == "two.sided") {
+      lower_bound = -epsilon.val
+      vline_df <- data.frame(
+        xintercept = c(-epsilon.val, epsilon.val),
+        label = paste0("Equivalence margin = +/-", epsilon.val.rounded)
+      )
+    } else {
+      lower_bound = -1
+      vline_df <- data.frame(
+        xintercept = c(-2, epsilon.val),
+        label = paste0("Equivalence bound = ", epsilon.val.rounded)
+      )
+    }
+    
+    shade_df <- data.frame(
+      xmin = lower_bound,
+      xmax = epsilon.val,
+      ymin = 0.5,
+      ymax = nrow(df_plot) + 0.5
+    )
+    
+    # Build the plot
+    screen.plot <- ggplot(df_plot, aes(x = delta, y = marker)) +
+      
+      # Shaded equivalence interval (behind points and CIs)
+      geom_rect(
+        data = shade_df,
+        aes(
+          xmin = lower_bound,
+          xmax = xmax,
+          ymin = ymin,
+          ymax = ymax
+        ),
+        fill = "#B4B4B4",
+        alpha = 0.3,
+        inherit.aes = FALSE,
+        show.legend = FALSE
+      ) +
+      
+      # Horizontal CI segments
+      geom_segment(
+        aes(
+          x = ci_lower,
+          xend = ci_upper,
+          y = marker,
+          yend = marker,
+          color = logp
+        ),
+        linewidth = 1.1,
+        lineend = "round"
+      ) +
+      
+      # Points for estimates
+      geom_point(aes(
+        color = logp,
+        shape = sig,
+        size = sig
+      )) +
+      
+      # Equivalence margin lines (with legend)
+      geom_vline(
+        data = vline_df,
+        aes(xintercept = xintercept, linetype = label),
+        color = "#2E2E2E",
+        linewidth = 1,
+        alpha = 0.8,
+        show.legend = c(
+          linetype = TRUE,
+          color = FALSE,
+          shape = FALSE
+        )
+      ) +
+      
+      # Vertical zero reference line
+      geom_vline(
+        xintercept = 0,
+        color = "#B4B4B4",
+        linewidth = 0.5,
+        alpha = 0.5
+      ) +
+      
+      # Colour scale for raw p-values
+      scale_color_gradientn(
+        colors = c("#2C7BB6", "grey80", "#D7191C", "#8B0000"),
+        values = colour_values,
+        limits = c(0, -log10(p_floor)),
+        breaks = logp_breaks,
+        labels = c("1", "0.1", "0.05", paste0("<", format(
+          p_floor, scientific = TRUE
+        ))),
+        name = "Raw p-value",
+        oob = scales::squish
+      ) +
+      
+      # Shape scale for adjusted significance
+      scale_shape_manual(
+        values = c(`TRUE` = 18, `FALSE` = 1),
+        limits = c(TRUE, FALSE),
+        drop = FALSE,
+        labels = c(
+          `TRUE` = bquote("Adjusted p" <= .(alpha)),
+          `FALSE` = bquote("Adjusted p" > .(alpha))
+        ),
+        name = "Multiplicity-corrected \nsignificance",
+        guide = guide_legend(override.aes = list(size = c(5, 4)))
+      ) +
+      scale_size_manual(
+        values = c(`TRUE` = 5, `FALSE` = 4),
+        guide = "none"  # no separate size legend
+      ) +
+      # Linetype scale for equivalence margins
+      scale_linetype_manual(name = NULL, values = 1) +
+      
+      # Labels and title
+      labs(
+        x = expression("Surrogacy parameter " ~ delta),
+        y = NULL,
+        title = glue::glue("RISE screening results: Top {screen.plot.topN} markers")
+      ) +
+      
+      # Plot limits
+      coord_cartesian(xlim = c(-1, 1)) +
+      
+      # Theme
+      theme_minimal(base_size = 20) +
+      theme(
+        plot.title         = element_text(
+          size = 25,
+          face = "bold",
+          hjust = 0.5
+        ),
+        axis.text.y        = element_text(size = 13),
+        axis.text.x        = element_text(size = 15),
+        axis.title.x       = element_text(size = 30),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor   = element_blank(),
+        legend.title       = element_text(size = 15),
+        legend.text        = element_text(size = 13),
+        plot.caption       = element_text(size = 13, hjust = 0)
+      ) + 
+      guides(
+        color = guide_colorbar(order = 1),
+        shape = guide_legend(order = 2),
+        linetype = guide_legend(order = 3)
+      )
+  }
+  
+  
+  
   # Add a message to warn users about degenerate standard error estimation
   if(any(results$sd == 0)) {
     n_zero <- sum(results$sd == 0)
@@ -299,11 +487,20 @@ rise.screen <- function(yone,
     results = results
   }
   
+  plot <- list(
+    "screen.plot" = if (return.screen.plot) {
+      screen.plot
+    } else {
+      NULL
+    }
+  )
+  
   return(
     list(
       screening.metrics   = results,
       significant.markers = significant_markers,
-      screening.weights   = screening.weights
+      screening.weights   = screening.weights,
+      plot                = plot
     )
   )
 }
